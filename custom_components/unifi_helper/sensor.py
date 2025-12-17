@@ -147,14 +147,6 @@ class UniFiEnergyAccumulationSensor(SensorEntity):
         self._unsub_update = None
 
     @property
-    def device_info(self) -> dict[str, Any]:
-        """Return device info to link this sensor to the UniFi device."""
-        return {
-            "identifiers": {(UNIFI_DOMAIN, self._device_id)},
-            # Don't set name, manufacturer, model - let the UniFi integration handle that
-        }
-
-    @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
         return round(self._total_energy_kwh, 3)
@@ -170,6 +162,14 @@ class UniFiEnergyAccumulationSensor(SensorEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
+        
+        # Register this entity with the same device as the UniFi PoE sensors
+        entity_registry = er.async_get(self.hass)
+        if self.entity_id:
+            entity_registry.async_update_entity(
+                self.entity_id,
+                device_id=self._device_id,
+            )
         
         # Start periodic updates
         self._unsub_update = async_track_time_interval(

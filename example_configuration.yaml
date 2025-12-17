@@ -1,0 +1,16 @@
+# Example configuration.yaml for UniFi Helper
+
+# Basic setup - no configuration needed, auto-discovery
+unifi_helper:
+
+# Optional: Enable debug logging for troubleshooting
+logger:
+  default: info
+  logs:
+    custom_components.unifi_helper: debug
+
+# The UniFi integration must be configured first
+# This integration depends on it
+unifi:
+  # Your UniFi configuration here
+  # See: https://www.home-assistant.io/integrations/unifi/
