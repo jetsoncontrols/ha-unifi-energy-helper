@@ -18,7 +18,7 @@ from homeassistant.const import (
     UnitOfPower,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
@@ -32,17 +32,6 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up UniFi Helper energy sensors."""
-    
-    # This runs without config flow, so we need to discover entities automatically
-    await async_setup_platform(hass, {}, async_add_entities)
 
 
 async def async_setup_platform(
@@ -86,25 +75,23 @@ async def async_setup_platform(
                 device_poe_map[entry.device_id].append(entity_id)
     
     # Create energy sensors for each device that has PoE ports
+    device_registry = dr.async_get(hass)
     energy_sensors = []
+    
     for device_id, poe_entity_ids in device_poe_map.items():
         _LOGGER.info(
             f"Creating energy sensor for device {device_id} with {len(poe_entity_ids)} PoE ports"
         )
         
-        # Get device name from one of the entities
+        # Get device name from the device registry
         device_name = None
-        for entity_id in poe_entity_ids:
-            entity_entry = entity_registry.entities.get(entity_id)
-            if entity_entry and entity_entry.device_id:
-                device_name = entity_entry.name or entity_entry.original_name
-                if device_name:
-                    # Extract device name from port name (e.g., "Switch Port 1" -> "Switch")
-                    device_name = device_name.split(" Port ")[0] if " Port " in device_name else device_name
-                    device_name = device_name.split(" POE ")[0] if " POE " in device_name.upper() else device_name
-                    break
+        device_entry = device_registry.async_get(device_id)
+        if device_entry:
+            # Use the device's name from the registry
+            device_name = device_entry.name_by_user or device_entry.name
         
         if not device_name:
+            # Fallback to extracting from entity name (shouldn't happen normally)
             device_name = f"UniFi Device {device_id[:8]}"
         
         energy_sensor = UniFiEnergyAccumulationSensor(
@@ -155,6 +142,13 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         self._unsub_update = None
 
     @property
+    def device_info(self) -> dict[str, Any] | None:
+        """Return device info to link this sensor to the UniFi device."""
+        # We don't create a new device; we link to the existing UniFi device
+        # by not providing device_info. The device_id will be set in the registry.
+        return None
+
+    @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
         return round(self._total_energy_kwh, 3)
@@ -187,12 +181,21 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
                 )
         
         # Register this entity with the same device as the UniFi PoE sensors
+        # Schedule this to run after entity is fully registered
         entity_registry = er.async_get(self.hass)
-        if self.entity_id:
-            entity_registry.async_update_entity(
-                self.entity_id,
-                device_id=self._device_id,
-            )
+        
+        @callback
+        def _async_update_device():
+            """Update device_id for this entity."""
+            if self.entity_id:
+                entity_registry.async_update_entity(
+                    self.entity_id,
+                    device_id=self._device_id,
+                )
+                _LOGGER.debug(f"Linked {self.entity_id} to device {self._device_id}")
+        
+        # Schedule the device update to run after entity is registered
+        self.hass.async_create_task(_async_update_device())
         
         # Start periodic updates
         self._unsub_update = async_track_time_interval(
