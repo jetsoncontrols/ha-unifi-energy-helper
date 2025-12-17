@@ -1,0 +1,8 @@
+{
+  "title": "UniFi Helper",
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
