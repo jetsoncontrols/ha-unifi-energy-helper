@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -69,7 +70,14 @@ async def async_setup_platform(
         ):
             # Check if this is likely a PoE port power sensor
             # UniFi PoE sensors typically have "port" in their name or unique_id
-            if "port" in entity_id.lower() or "poe" in entity_id.lower():
+            is_poe = (
+                "port" in entity_id.lower()
+                or "poe" in entity_id.lower()
+                or (entry.unique_id and "port" in entry.unique_id.lower())
+                or (entry.unique_id and "poe" in entry.unique_id.lower())
+            )
+            
+            if is_poe:
                 _LOGGER.debug(f"Found UniFi PoE power entity: {entity_id} (device: {entry.device_id})")
                 poe_entities.append((entity_id, entry))
                 
@@ -114,8 +122,8 @@ async def async_setup_platform(
         _LOGGER.warning("No UniFi PoE power entities found to create energy sensors")
 
 
-class UniFiEnergyAccumulationSensor(SensorEntity):
-    """Representation of a UniFi energy accumulation sensor."""
+class UniFiEnergyAccumulationSensor(RestoreSensor):
+    """Representation of a UniFi energy accumulation sensor with state restoration."""
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.ENERGY
@@ -162,6 +170,21 @@ class UniFiEnergyAccumulationSensor(SensorEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
+        
+        # Restore previous state if available
+        last_state = await self.async_get_last_state()
+        last_sensor_data = await self.async_get_last_sensor_data()
+        
+        if last_sensor_data and last_sensor_data.native_value is not None:
+            try:
+                self._total_energy_kwh = float(last_sensor_data.native_value)
+                _LOGGER.info(
+                    f"Restored energy state for {self._device_name}: {self._total_energy_kwh:.3f} kWh"
+                )
+            except (ValueError, TypeError):
+                _LOGGER.warning(
+                    f"Could not restore energy state for {self._device_name}, starting from 0"
+                )
         
         # Register this entity with the same device as the UniFi PoE sensors
         entity_registry = er.async_get(self.hass)
