@@ -1,0 +1,22 @@
+# Example configuration.yaml for UniFi Helper
+
+# NOTE: As of version 2.0.0, UniFi Helper uses config flow (UI configuration)
+# and no longer requires YAML configuration.
+#
+# To set up UniFi Helper:
+# 1. Go to Settings → Devices & Services
+# 2. Click "+ Add Integration"
+# 3. Search for "UniFi Helper"
+# 4. Follow the setup wizard
+
+# Optional: Enable debug logging for troubleshooting
+logger:
+  default: info
+  logs:
+    custom_components.unifi_helper: debug
+
+# The UniFi integration must be configured first
+# This integration depends on it
+unifi:
+  # Your UniFi configuration here
+  # See: https://www.home-assistant.io/integrations/unifi/

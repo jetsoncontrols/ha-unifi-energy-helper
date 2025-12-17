@@ -1,0 +1,7 @@
+{
+  "name": "UniFi Helper",
+  "content_in_root": false,
+  "filename": "unifi_helper",
+  "render_readme": true,
+  "homeassistant": "2023.1.0"
+}

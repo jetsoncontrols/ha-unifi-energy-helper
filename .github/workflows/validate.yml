@@ -1,0 +1,49 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate Python
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Home Assistant dependencies
+        run: |
+          pip install homeassistant
+
+      - name: Validate Python syntax
+        run: |
+          python3 -m py_compile custom_components/unifi_helper/*.py
+
+      - name: Check manifest
+        run: |
+          python3 -c "import json; json.load(open('custom_components/unifi_helper/manifest.json'))"
+
+      - name: Check strings
+        run: |
+          python3 -c "import json; json.load(open('custom_components/unifi_helper/strings.json'))"
+
+  hassfest:
+    name: Hassfest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
