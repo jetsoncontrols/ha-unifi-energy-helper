@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import logging
 
+import voluptuous as vol
+
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
 
 from .const import DOMAIN
@@ -12,6 +15,14 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+# Config schema - empty since we don't need configuration
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: cv.empty_config_schema(),
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
