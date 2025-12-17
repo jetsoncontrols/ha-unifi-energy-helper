@@ -80,18 +80,21 @@ Restart Home Assistant after cloning.
 
 ## Configuration
 
-After installation, add the following to your `configuration.yaml`:
+After installation, set up the integration through the Home Assistant UI:
 
-```yaml
-# UniFi Helper - Energy accumulation for PoE ports
-unifi_helper:
-```
+1. **Restart Home Assistant** (if you just installed the integration)
+2. Go to **Settings** → **Devices & Services**
+3. Click the **+ Add Integration** button in the bottom right
+4. Search for **"UniFi Helper"**
+5. Click on **UniFi Helper** in the search results
+6. The integration will automatically check for UniFi PoE devices
+7. Click **Submit** to complete the setup
 
-**Note**: That's all you need! The integration will automatically discover all UniFi PoE power sensors.
+**Note**: No YAML configuration needed! The integration uses config flow (UI-based setup).
 
 ### Optional: Debug Logging
 
-If you want to see detailed logs during setup or troubleshooting:
+If you want to see detailed logs during setup or troubleshooting, add this to your `configuration.yaml`:
 
 ```yaml
 logger:
@@ -102,10 +105,10 @@ logger:
 
 ## Verification
 
-After restarting Home Assistant with the configuration:
+After setting up through the UI:
 
-1. Go to **Settings** → **Devices & Services**
-2. Find your UniFi devices
+1. The integration will appear in **Settings** → **Devices & Services**
+2. Find your UniFi devices in the integration
 3. Click on a device that has PoE ports
 4. You should see a new entity: **PoE Energy** with unit kWh
 5. The sensor will start accumulating energy from all PoE ports on that device

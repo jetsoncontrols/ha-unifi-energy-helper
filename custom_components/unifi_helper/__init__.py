@@ -3,12 +3,9 @@ from __future__ import annotations
 
 import logging
 
-import voluptuous as vol
-
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.discovery import async_load_platform
 
 from .const import DOMAIN
 
@@ -16,29 +13,21 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
-# Config schema - empty since we don't need configuration
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: cv.empty_config_schema(),
-    },
-    extra=vol.ALLOW_EXTRA,
-)
 
-
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the UniFi Helper component.
-    
-    This integration uses async_setup instead of config entries because it:
-    1. Requires no user configuration (auto-discovery only)
-    2. Has no settings to configure
-    3. Simply wraps existing UniFi integration entities
-    
-    For a simple helper integration, this approach is more straightforward
-    than implementing a full config entry flow.
-    """
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up UniFi Helper from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     
-    # Set up sensor platform
-    await async_load_platform(hass, Platform.SENSOR, DOMAIN, {}, config)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+    
+    return unload_ok

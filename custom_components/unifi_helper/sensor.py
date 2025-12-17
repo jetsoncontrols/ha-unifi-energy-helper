@@ -34,13 +34,12 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_platform(
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: dict,
+    config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-    discovery_info: dict | None = None,
 ) -> None:
-    """Set up the UniFi Helper energy sensors."""
+    """Set up UniFi Helper energy sensors from a config entry."""
     
     entity_registry = er.async_get(hass)
     

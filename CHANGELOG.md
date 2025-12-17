@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2024-12-17
+
+### Changed
+- **BREAKING**: Migrated from YAML-based configuration to config flow (UI-based setup)
+- Integration now set up through Settings → Devices & Services → Add Integration
+- No longer requires `unifi_helper:` in configuration.yaml
+
+### Added
+- Config flow implementation for UI-based setup
+- Automatic detection of UniFi PoE devices during setup
+- Single instance enforcement to prevent duplicate configurations
+- Better error messaging when no PoE devices are found
+
+### Technical
+- Added `config_flow.py` for UI-based configuration
+- Updated `__init__.py` to use `async_setup_entry` instead of `async_setup`
+- Updated `sensor.py` to use `async_setup_entry` instead of `async_setup_platform`
+- Added `config_flow: true` to manifest.json
+- Enhanced strings.json with config flow steps and abort messages
+
 ## [1.0.0] - 2024-12-17
 
 ### Added

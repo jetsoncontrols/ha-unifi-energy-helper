@@ -1,3 +1,15 @@
 {
-  "title": "UniFi Helper"
+  "title": "UniFi Helper",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up UniFi Helper",
+        "description": "This integration will automatically create energy sensors for your UniFi PoE devices.\n\nClick Submit to continue."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single instance is allowed.",
+      "no_unifi_poe_devices": "No UniFi PoE devices found. Please ensure the UniFi Network integration is set up and you have PoE-capable switches with power monitoring enabled."
+    }
+  }
 }

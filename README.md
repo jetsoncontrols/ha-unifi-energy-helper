@@ -39,14 +39,14 @@ A Home Assistant custom component that automatically creates synthetic Energy (k
 
 ## Configuration
 
-Add the following to your `configuration.yaml`:
+After installation, add the integration through the Home Assistant UI:
 
-```yaml
-# UniFi Helper
-unifi_helper:
-```
+1. Go to **Settings** → **Devices & Services**
+2. Click **+ Add Integration**
+3. Search for "UniFi Helper"
+4. Click on it and follow the setup wizard
 
-That's it! The integration will automatically discover all UniFi PoE power entities and create corresponding energy sensors.
+No YAML configuration needed! The integration will automatically discover all UniFi PoE power entities and create corresponding energy sensors.
 
 ## How It Works
 
