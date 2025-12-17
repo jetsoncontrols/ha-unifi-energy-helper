@@ -1,0 +1,206 @@
+# Installation Guide - UniFi Helper
+
+## Prerequisites
+
+Before installing UniFi Helper, ensure you have:
+
+1. **Home Assistant** 2023.1 or later
+2. **UniFi Network Integration** configured and working
+   - Available at Settings → Devices & Services → Add Integration → UniFi Network
+   - Must have at least one UniFi switch with PoE capabilities
+3. **PoE Port Sensors** enabled in the UniFi integration
+   - These appear as entities like `sensor.switch_port_1_poe_power`
+
+## Installation Methods
+
+### Method 1: HACS (Recommended)
+
+HACS (Home Assistant Community Store) is the easiest way to install and manage custom components.
+
+#### First-time HACS Setup (if not already installed)
+
+1. Follow the [HACS installation guide](https://hacs.xyz/docs/setup/download)
+2. Restart Home Assistant after HACS installation
+
+#### Installing UniFi Helper via HACS
+
+1. Open Home Assistant
+2. Navigate to **HACS** in the sidebar
+3. Click on **Integrations**
+4. Click the **⋮** (three dots) in the top right corner
+5. Select **Custom repositories**
+6. Add the repository:
+   - **URL**: `https://github.com/jetsoncontrols/ha-unifi-helper`
+   - **Category**: Integration
+7. Click **Add**
+8. Close the custom repositories dialog
+9. Click the **+ Explore & Download Repositories** button
+10. Search for "UniFi Helper"
+11. Click on **UniFi Helper**
+12. Click **Download**
+13. Select the latest version
+14. Restart Home Assistant
+
+### Method 2: Manual Installation
+
+If you prefer not to use HACS, you can install manually:
+
+1. Download the latest release from the [releases page](https://github.com/jetsoncontrols/ha-unifi-helper/releases)
+2. Unzip the downloaded file
+3. Copy the `custom_components/unifi_helper` folder to your Home Assistant configuration directory:
+   ```
+   <config_directory>/custom_components/unifi_helper/
+   ```
+   
+   Your directory structure should look like:
+   ```
+   homeassistant/
+   ├── configuration.yaml
+   ├── custom_components/
+   │   └── unifi_helper/
+   │       ├── __init__.py
+   │       ├── const.py
+   │       ├── manifest.json
+   │       ├── sensor.py
+   │       └── strings.json
+   ```
+
+4. Restart Home Assistant
+
+### Method 3: Git Clone (For Development)
+
+If you want to contribute or test the latest development version:
+
+```bash
+cd /config/custom_components
+git clone https://github.com/jetsoncontrols/ha-unifi-helper.git unifi_helper
+```
+
+Restart Home Assistant after cloning.
+
+## Configuration
+
+After installation, add the following to your `configuration.yaml`:
+
+```yaml
+# UniFi Helper - Energy accumulation for PoE ports
+unifi_helper:
+```
+
+**Note**: That's all you need! The integration will automatically discover all UniFi PoE power sensors.
+
+### Optional: Debug Logging
+
+If you want to see detailed logs during setup or troubleshooting:
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.unifi_helper: debug
+```
+
+## Verification
+
+After restarting Home Assistant with the configuration:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find your UniFi devices
+3. Click on a device that has PoE ports
+4. You should see a new entity: **PoE Energy** with unit kWh
+5. The sensor will start accumulating energy from all PoE ports on that device
+
+## What Gets Created
+
+For each UniFi switch/device with PoE ports, the integration creates:
+
+- **1 Energy Sensor** per device (not per port)
+  - Entity ID format: `sensor.<device_name>_poe_energy`
+  - Unit: kWh (kilowatt-hours)
+  - Device Class: Energy
+  - State Class: Total Increasing (for Energy Dashboard compatibility)
+
+The energy sensor accumulates power from **all PoE ports** on the device.
+
+## Using with Energy Dashboard
+
+To track PoE energy consumption in Home Assistant's Energy Dashboard:
+
+1. Go to **Settings** → **Dashboards** → **Energy**
+2. Under **Device consumption**, click **Add Consumption**
+3. Select your UniFi device's **PoE Energy** sensor
+4. Configure the cost per kWh (optional)
+5. Click **Save**
+
+The Energy Dashboard will now track and visualize your PoE power consumption!
+
+## Troubleshooting
+
+### No energy sensors appear
+
+**Check**: Do you have PoE port power sensors?
+```
+Developer Tools → States → Filter by "poe_power"
+```
+
+If no sensors appear:
+1. Verify your UniFi integration is working
+2. Ensure you have PoE-capable switches
+3. Check that PoE monitoring is enabled in the UniFi controller
+
+**Check**: Are the PoE sensors from the UniFi integration?
+- Entity IDs should start with `sensor.`
+- Platform should be `unifi`
+- Look in the entity attributes
+
+### Energy not accumulating
+
+**Check**: Are PoE port sensors reporting values?
+1. Go to Developer Tools → States
+2. Find your PoE power sensors
+3. Verify they show numeric values (not "unknown" or "unavailable")
+
+**Check**: Are devices connected to PoE ports?
+- PoE ports with no connected devices will report 0W
+- At least one port needs to have a powered device
+
+### Energy resets to zero
+
+The energy sensor uses state restoration and should persist across restarts.
+
+**If it resets:**
+1. Check Home Assistant logs for errors
+2. Verify the `home-assistant_v2.db` file has write permissions
+3. Enable debug logging to see restoration attempts
+
+### Sensor not under correct device
+
+The sensor should automatically appear under the same device as the UniFi switch.
+
+**If it doesn't:**
+1. Check the entity's device_id in Developer Tools → States → Attributes
+2. Compare with the device_id of the PoE port sensors
+3. Report as an issue with device IDs included
+
+## Uninstallation
+
+To remove UniFi Helper:
+
+1. Remove `unifi_helper:` from your `configuration.yaml`
+2. Restart Home Assistant
+3. (Optional) Remove the `custom_components/unifi_helper` directory
+4. (Optional) If using HACS, go to HACS → Integrations → UniFi Helper → Remove
+
+## Getting Help
+
+- **Documentation**: [README.md](README.md)
+- **Issues**: [GitHub Issues](https://github.com/jetsoncontrols/ha-unifi-helper/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jetsoncontrols/ha-unifi-helper/discussions)
+
+When reporting issues, please include:
+- Home Assistant version
+- UniFi integration version
+- UniFi controller version
+- Switch model
+- Debug logs (see Optional: Debug Logging above)
+- Screenshots of the issue
