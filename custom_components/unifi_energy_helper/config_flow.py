@@ -57,4 +57,4 @@ class UniFiEnergyHelperConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
-        return self.async_create_entry(title="UniFi Helper", data={})
+        return self.async_create_entry(title="UniFi Energy Helper", data={})

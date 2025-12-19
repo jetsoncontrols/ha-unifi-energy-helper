@@ -1,6 +1,6 @@
-# Contributing to UniFi Helper
+# Contributing to UniFi Energy Helper
 
-Thank you for your interest in contributing to UniFi Helper! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to UniFi Energy Helper! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -32,14 +32,14 @@ Be respectful, constructive, and professional in all interactions.
 1. **Install in Development Mode**:
    ```bash
    # Link to your Home Assistant config directory
-   ln -s $(pwd)/custom_components/unifi_helper ~/.homeassistant/custom_components/unifi_helper
+   ln -s $(pwd)/custom_components/unifi_energy_helper ~/.homeassistant/custom_components/unifi_energy_helper
    ```
 
 2. **Enable Debug Logging** in `configuration.yaml`:
    ```yaml
    logger:
      logs:
-       custom_components.unifi_helper: debug
+       custom_components.unifi_energy_helper: debug
    ```
 
 3. **Restart Home Assistant** to load your changes
@@ -86,7 +86,7 @@ Before submitting:
 
 1. **Syntax Check**:
    ```bash
-   python3 -m py_compile custom_components/unifi_helper/*.py
+   python3 -m py_compile custom_components/unifi_energy_helper/*.py
    ```
 
 2. **Manual Testing**:
@@ -145,7 +145,7 @@ Add per-port energy sensor option
 When reporting bugs, include:
 
 - Home Assistant version
-- UniFi Helper version
+- UniFi Energy Helper version
 - UniFi Controller version
 - Switch model
 - Steps to reproduce
@@ -229,4 +229,4 @@ Contributors will be:
 - Credited in CHANGELOG.md
 - Appreciated by the community!
 
-Thank you for contributing to UniFi Helper! 🎉
+Thank you for contributing to UniFi Energy Helper! 🎉

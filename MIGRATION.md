@@ -9,7 +9,7 @@ Version 2.0.0 introduces **config flow** (UI-based configuration), replacing the
 ### Before (v1.x) - YAML Configuration
 ```yaml
 # configuration.yaml
-unifi_helper:
+unifi_energy_helper:
 ```
 
 ### After (v2.0.0) - UI Configuration
@@ -19,15 +19,15 @@ No YAML configuration needed! Setup through the UI instead.
 
 ### 1. Update the Integration
 
-Update UniFi Helper to version 2.0.0 through HACS or by replacing the files manually.
+Update UniFi Energy Helper to version 2.0.0 through HACS or by replacing the files manually.
 
 ### 2. Remove YAML Configuration
 
-Remove the `unifi_helper:` entry from your `configuration.yaml`:
+Remove the `unifi_energy_helper:` entry from your `configuration.yaml`:
 
 ```yaml
 # Remove this line:
-unifi_helper:
+unifi_energy_helper:
 ```
 
 ### 3. Restart Home Assistant
@@ -38,7 +38,7 @@ Restart Home Assistant to apply the changes.
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration** (bottom right corner)
-3. Search for **"UniFi Helper"**
+3. Search for **"UniFi Energy Helper"**
 4. Click on it and follow the setup wizard
 5. Click **Submit** to complete the setup
 
@@ -100,7 +100,7 @@ After setup:
 If you need to roll back to v1.x:
 
 1. Downgrade to v1.0.0 through HACS or manually
-2. Add `unifi_helper:` back to `configuration.yaml`
+2. Add `unifi_energy_helper:` back to `configuration.yaml`
 3. Restart Home Assistant
 
 Note: This is not recommended unless you encounter critical issues.

@@ -1,13 +1,13 @@
-# Technical Documentation - UniFi Helper
+# Technical Documentation - UniFi Energy Helper
 
 ## Architecture Overview
 
-UniFi Helper is a Home Assistant custom component that extends the built-in UniFi Network integration by creating synthetic energy accumulation sensors for PoE-capable network switches.
+UniFi Energy Helper is a Home Assistant custom component that extends the built-in UniFi Network integration by creating synthetic energy accumulation sensors for PoE-capable network switches.
 
 ## Component Structure
 
 ```
-custom_components/unifi_helper/
+custom_components/unifi_energy_helper/
 ├── __init__.py         # Component initialization and setup
 ├── const.py           # Constants and configuration defaults
 ├── manifest.json      # Component metadata and dependencies
@@ -151,7 +151,7 @@ This ensures energy accumulation continues seamlessly across restarts.
                         │ loads integration
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              UniFi Helper Integration                        │
+│              UniFi Energy Helper Integration                  │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ 1. Discovery: Scan entity registry for PoE sensors  │   │
 │  └──────────────────────────────────────────────────────┘   │
@@ -221,7 +221,7 @@ This ensures energy accumulation continues seamlessly across restarts.
 
 - **unifi**: The integration depends on the UniFi integration being configured
   - Specified in `manifest.json`: `"dependencies": ["unifi"]`
-  - Home Assistant ensures UniFi loads before UniFi Helper
+  - Home Assistant ensures UniFi loads before UniFi Energy Helper
 
 ## Configuration
 
@@ -229,8 +229,8 @@ This ensures energy accumulation continues seamlessly across restarts.
 
 ```json
 {
-  "domain": "unifi_helper",
-  "name": "UniFi Helper",
+  "domain": "unifi_energy_helper",
+  "name": "UniFi Energy Helper",
   "dependencies": ["unifi"],
   "integration_type": "device",
   "iot_class": "local_polling",
@@ -246,7 +246,7 @@ This ensures energy accumulation continues seamlessly across restarts.
 ### Constants (const.py)
 
 ```python
-DOMAIN = "unifi_helper"
+DOMAIN = "unifi_energy_helper"
 UNIFI_DOMAIN = "unifi"
 DEFAULT_SCAN_INTERVAL = 60  # seconds
 WATTS_TO_KILOWATTS = 0.001
@@ -296,7 +296,7 @@ The component heavily relies on Home Assistant's entity registry:
 ### Manual Testing
 
 1. **Setup**: Configure UniFi integration with PoE switch
-2. **Install**: Add unifi_helper to configuration
+2. **Install**: Add unifi_energy_helper to configuration
 3. **Verify**: Check energy sensor appears under device
 4. **Monitor**: Observe energy accumulation over time
 5. **Restart**: Verify state restoration works

@@ -28,15 +28,15 @@ jobs:
 
       - name: Validate Python syntax
         run: |
-          python3 -m py_compile custom_components/unifi_helper/*.py
+          python3 -m py_compile custom_components/unifi_energy_helper/*.py
 
       - name: Check manifest
         run: |
-          python3 -c "import json; json.load(open('custom_components/unifi_helper/manifest.json'))"
+          python3 -c "import json; json.load(open('custom_components/unifi_energy_helper/manifest.json'))"
 
       - name: Check strings
         run: |
-          python3 -c "import json; json.load(open('custom_components/unifi_helper/strings.json'))"
+          python3 -c "import json; json.load(open('custom_components/unifi_energy_helper/strings.json'))"
 
   hassfest:
     name: Hassfest Validation

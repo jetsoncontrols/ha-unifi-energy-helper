@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Create a report to help us improve UniFi Helper
+about: Create a report to help us improve UniFi Energy Helper
 title: '[BUG] '
 labels: bug
 assignees: ''
@@ -11,7 +11,7 @@ A clear and concise description of what the bug is.
 
 ## Environment
 - **Home Assistant Version**: [e.g., 2024.1.0]
-- **UniFi Helper Version**: [e.g., 1.0.0]
+- **UniFi Energy Helper Version**: [e.g., 1.0.0]
 - **UniFi Integration Version**: [e.g., built-in]
 - **UniFi Controller Version**: [e.g., 7.5.176]
 - **Switch Model**: [e.g., USW-24-POE]
@@ -36,7 +36,7 @@ Please include relevant logs with debug logging enabled:
 ```yaml
 logger:
   logs:
-    custom_components.unifi_helper: debug
+    custom_components.unifi_energy_helper: debug
 ```
 
 ```
@@ -45,8 +45,8 @@ Paste logs here
 
 ## Configuration
 ```yaml
-# Your configuration.yaml entry for unifi_helper
-unifi_helper:
+# Your configuration.yaml entry for unifi_energy_helper
+unifi_energy_helper:
 ```
 
 ## Additional Context

@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for UniFi Helper
+about: Suggest an idea for UniFi Energy Helper
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

@@ -1,7 +1,7 @@
 {
-  "name": "UniFi Helper",
+  "name": "UniFi Energy Helper",
   "content_in_root": false,
-  "filename": "unifi_helper",
+  "filename": "unifi_energy_helper",
   "render_readme": true,
   "homeassistant": "2023.1.0"
 }

@@ -1,8 +1,8 @@
-# Installation Guide - UniFi Helper
+# Installation Guide - UniFi Energy Helper
 
 ## Prerequisites
 
-Before installing UniFi Helper, ensure you have:
+Before installing UniFi Energy Helper, ensure you have:
 
 1. **Home Assistant** 2023.1 or later
 2. **UniFi Network Integration** configured and working
@@ -22,7 +22,7 @@ HACS (Home Assistant Community Store) is the easiest way to install and manage c
 1. Follow the [HACS installation guide](https://hacs.xyz/docs/setup/download)
 2. Restart Home Assistant after HACS installation
 
-#### Installing UniFi Helper via HACS
+#### Installing UniFi Energy Helper via HACS
 
 1. Open Home Assistant
 2. Navigate to **HACS** in the sidebar
@@ -35,8 +35,8 @@ HACS (Home Assistant Community Store) is the easiest way to install and manage c
 7. Click **Add**
 8. Close the custom repositories dialog
 9. Click the **+ Explore & Download Repositories** button
-10. Search for "UniFi Helper"
-11. Click on **UniFi Helper**
+10. Search for "UniFi Energy Helper"
+11. Click on **UniFi Energy Helper**
 12. Click **Download**
 13. Select the latest version
 14. Restart Home Assistant
@@ -47,9 +47,9 @@ If you prefer not to use HACS, you can install manually:
 
 1. Download the latest release from the [releases page](https://github.com/jetsoncontrols/ha-unifi-helper/releases)
 2. Unzip the downloaded file
-3. Copy the `custom_components/unifi_helper` folder to your Home Assistant configuration directory:
+3. Copy the `custom_components/unifi_energy_helper` folder to your Home Assistant configuration directory:
    ```
-   <config_directory>/custom_components/unifi_helper/
+   <config_directory>/custom_components/unifi_energy_helper/
    ```
    
    Your directory structure should look like:
@@ -57,7 +57,7 @@ If you prefer not to use HACS, you can install manually:
    homeassistant/
    ├── configuration.yaml
    ├── custom_components/
-   │   └── unifi_helper/
+   │   └── unifi_energy_helper/
    │       ├── __init__.py
    │       ├── const.py
    │       ├── manifest.json
@@ -73,7 +73,7 @@ If you want to contribute or test the latest development version:
 
 ```bash
 cd /config/custom_components
-git clone https://github.com/jetsoncontrols/ha-unifi-helper.git unifi_helper
+git clone https://github.com/jetsoncontrols/ha-unifi-helper.git unifi_energy_helper
 ```
 
 Restart Home Assistant after cloning.
@@ -85,8 +85,8 @@ After installation, set up the integration through the Home Assistant UI:
 1. **Restart Home Assistant** (if you just installed the integration)
 2. Go to **Settings** → **Devices & Services**
 3. Click the **+ Add Integration** button in the bottom right
-4. Search for **"UniFi Helper"**
-5. Click on **UniFi Helper** in the search results
+4. Search for **"UniFi Energy Helper"**
+5. Click on **UniFi Energy Helper** in the search results
 6. The integration will automatically check for UniFi PoE devices
 7. Click **Submit** to complete the setup
 
@@ -100,7 +100,7 @@ If you want to see detailed logs during setup or troubleshooting, add this to yo
 logger:
   default: info
   logs:
-    custom_components.unifi_helper: debug
+    custom_components.unifi_energy_helper: debug
 ```
 
 ## Verification
@@ -187,12 +187,12 @@ The sensor should automatically appear under the same device as the UniFi switch
 
 ## Uninstallation
 
-To remove UniFi Helper:
+To remove UniFi Energy Helper:
 
-1. Remove `unifi_helper:` from your `configuration.yaml`
+1. Remove `unifi_energy_helper:` from your `configuration.yaml`
 2. Restart Home Assistant
-3. (Optional) Remove the `custom_components/unifi_helper` directory
-4. (Optional) If using HACS, go to HACS → Integrations → UniFi Helper → Remove
+3. (Optional) Remove the `custom_components/unifi_energy_helper` directory
+4. (Optional) If using HACS, go to HACS → Integrations → UniFi Energy Helper → Remove
 
 ## Getting Help
 

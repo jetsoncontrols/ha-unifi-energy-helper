@@ -1,19 +1,19 @@
-# Example configuration.yaml for UniFi Helper
+# Example configuration.yaml for UniFi Energy Helper
 
-# NOTE: As of version 2.0.0, UniFi Helper uses config flow (UI configuration)
+# NOTE: As of version 2.0.0, UniFi Energy Helper uses config flow (UI configuration)
 # and no longer requires YAML configuration.
 #
-# To set up UniFi Helper:
+# To set up UniFi Energy Helper:
 # 1. Go to Settings → Devices & Services
 # 2. Click "+ Add Integration"
-# 3. Search for "UniFi Helper"
+# 3. Search for "UniFi Energy Helper"
 # 4. Follow the setup wizard
 
 # Optional: Enable debug logging for troubleshooting
 logger:
   default: info
   logs:
-    custom_components.unifi_helper: debug
+    custom_components.unifi_energy_helper: debug
 
 # The UniFi integration must be configured first
 # This integration depends on it

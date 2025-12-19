@@ -1,4 +1,4 @@
-# UniFi Helper for Home Assistant
+# UniFi Energy Helper for Home Assistant
 
 A Home Assistant custom component that automatically creates synthetic Energy (kWh) entities for UniFi Network devices with PoE ports. This helper accumulates energy consumption from PoE port wattage entities and displays them alongside the UniFi Network device.
 
@@ -30,10 +30,10 @@ A Home Assistant custom component that automatically creates synthetic Energy (k
 
 ### Manual Installation
 
-1. Download the `custom_components/unifi_helper` folder from this repository
+1. Download the `custom_components/unifi_energy_helper` folder from this repository
 2. Copy it to your Home Assistant `custom_components` directory:
    ```
-   <config_directory>/custom_components/unifi_helper/
+   <config_directory>/custom_components/unifi_energy_helper/
    ```
 3. Restart Home Assistant
 
@@ -43,7 +43,7 @@ After installation, add the integration through the Home Assistant UI:
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
-3. Search for "UniFi Helper"
+3. Search for "UniFi Energy Helper"
 4. Click on it and follow the setup wizard
 
 No YAML configuration needed! The integration will automatically discover all UniFi PoE power entities and create corresponding energy sensors.
@@ -85,7 +85,7 @@ The created energy sensors are compatible with Home Assistant's Energy Dashboard
 
 **Energy not accumulating**
 - Verify PoE port sensors are reporting valid power values (not "unknown" or "unavailable")
-- Check the Home Assistant logs for any errors from `unifi_helper`
+- Check the Home Assistant logs for any errors from `unifi_energy_helper`
 
 **Energy sensor not showing under the correct device**
 - This should happen automatically; if not, check the device ID in the sensor attributes
@@ -98,7 +98,7 @@ To enable debug logging for troubleshooting:
 logger:
   default: info
   logs:
-    custom_components.unifi_helper: debug
+    custom_components.unifi_energy_helper: debug
 ```
 
 ## Contributing

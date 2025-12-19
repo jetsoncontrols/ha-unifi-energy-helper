@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **BREAKING**: Migrated from YAML-based configuration to config flow (UI-based setup)
 - Integration now set up through Settings → Devices & Services → Add Integration
-- No longer requires `unifi_helper:` in configuration.yaml
+- No longer requires `unifi_energy_helper:` in configuration.yaml
 
 ### Added
 - Config flow implementation for UI-based setup
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2024-12-17
 
 ### Added
-- Initial release of UniFi Helper custom component
+- Initial release of UniFi Energy Helper custom component
 - Automatic discovery of UniFi PoE power sensors
 - Energy accumulation sensor for each UniFi device with PoE ports
 - Device integration - energy sensors appear under the same device as UniFi switches

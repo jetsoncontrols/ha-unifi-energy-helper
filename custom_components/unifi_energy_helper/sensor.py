@@ -51,7 +51,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up UniFi Helper energy sensors from a config entry."""
+    """Set up UniFi Energy Helper energy sensors from a config entry."""
 
     entity_registry = er.async_get(hass)
 
