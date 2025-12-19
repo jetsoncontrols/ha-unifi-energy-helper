@@ -1,22 +1,24 @@
 # UniFi Energy Helper for Home Assistant
 
-A Home Assistant custom component that automatically creates synthetic Energy (kWh) entities for UniFi Network devices with PoE ports. This helper accumulates energy consumption from PoE port wattage entities and displays them alongside the UniFi Network device.
+A Home Assistant custom component that automatically creates synthetic Energy (kWh) entities for UniFi Network devices with PoE ports and PDU outlets. This helper accumulates energy consumption from power wattage entities and displays them alongside the UniFi Network device.
 
 ## Features
 
-- 🔌 **Automatic Discovery**: Automatically finds all UniFi PoE power sensors for each port
-- ⚡ **Per-Port Energy Tracking**: Creates individual energy (kWh) sensors for each PoE port
-- 📊 **Device Integration**: Energy sensors and reset buttons appear under the same device as the UniFi Network switch
+- 🔌 **Automatic Discovery**: Automatically finds all UniFi PoE power sensors and PDU outlet sensors
+- ⚡ **Per-Port/Outlet Energy Tracking**: Creates individual energy (kWh) sensors for each PoE port or PDU outlet
+- 📊 **Device Integration**: Energy sensors and reset buttons appear under the same device as the UniFi Network switch or PDU
 - 🔄 **Real-time Tracking**: Updates energy consumption instantly when power changes (event-driven)
 - 🔘 **Reset Buttons**: Each energy sensor has an associated reset button to zero the accumulation
 - 📈 **State Preservation**: Tracks total energy consumption as a monotonically increasing value, persists across restarts
-- 🆕 **Dynamic Discovery**: Automatically detects newly added or enabled PoE ports
+- 🆕 **Dynamic Discovery**: Automatically detects newly added or enabled PoE ports and PDU outlets
 
 ## Requirements
 
 - Home Assistant 2023.1 or later
-- UniFi Network integration configured with PoE-capable switches
-- PoE port wattage entities enabled in the UniFi integration
+- UniFi Network integration configured with:
+  - PoE-capable switches, and/or
+  - UniFi PDUs (Power Distribution Units)
+- Power wattage entities enabled in the UniFi integration
 
 ## Installation
 
@@ -52,22 +54,23 @@ No YAML configuration needed! The integration will automatically discover all Un
 
 ## How It Works
 
-1. **Discovery**: On startup, the integration scans the entity registry for UniFi power sensors (PoE ports)
-2. **Sensor Creation**: Creates one energy accumulation sensor **per PoE port**
+1. **Discovery**: On startup, the integration scans the entity registry for UniFi power sensors (PoE ports and PDU outlets)
+2. **Sensor Creation**: Creates one energy accumulation sensor **per PoE port or PDU outlet**
 3. **Button Creation**: Creates a reset button for each energy sensor
-4. **Device Linking**: Links all sensors and buttons to the same device as the UniFi switch
-5. **Real-time Energy Calculation**: When power changes on any port:
+4. **Device Linking**: Links all sensors and buttons to the same device as the UniFi switch or PDU
+5. **Real-time Energy Calculation**: When power changes on any port/outlet:
    - Detects the power state change immediately via event listener
    - Calculates the time elapsed since the last change
    - Computes energy consumed: Energy = Power × Time
-   - Adds it to the accumulated total for that port
+   - Adds it to the accumulated total for that port/outlet
 6. **Dynamic Updates**: Automatically creates new energy sensors and buttons when:
-   - New PoE ports are detected
-   - Previously disabled PoE entities are enabled
-7. **Display**: Energy sensors and reset buttons appear under the same device as the switch in the Home Assistant UI
+   - New PoE ports or PDU outlets are detected
+   - Previously disabled power entities are enabled
+7. **Display**: Energy sensors and reset buttons appear under the same device as the switch or PDU in the Home Assistant UI
 
 ## Example
 
+### PoE Switch Example
 If you have a UniFi switch with 8 PoE ports, and ports 1, 3, and 5 have devices connected drawing 15W, 30W, and 10W respectively:
 
 **Created Entities:**
@@ -78,15 +81,29 @@ If you have a UniFi switch with 8 PoE ports, and ports 1, 3, and 5 have devices 
 - `sensor.switch_port_5_energy` - Energy sensor for Port 5 (tracks 10W device)
 - `button.switch_port_5_reset_energy` - Reset button for Port 5
 
+### PDU Example
+If you have a UniFi PDU with outlets 1, 3, and 5 drawing 25W, 40W, and 18W respectively:
+
+**Created Entities:**
+- `sensor.unifi_pdu_outlet_1_energy` - Energy sensor for Outlet 1 (tracks 25W device)
+- `button.unifi_pdu_outlet_1_reset_energy` - Reset button for Outlet 1
+- `sensor.unifi_pdu_outlet_3_energy` - Energy sensor for Outlet 3 (tracks 40W device)
+- `button.unifi_pdu_outlet_3_reset_energy` - Reset button for Outlet 3
+- `sensor.unifi_pdu_outlet_5_energy` - Energy sensor for Outlet 5 (tracks 18W device)
+- `button.unifi_pdu_outlet_5_reset_energy` - Reset button for Outlet 5
+
 **Energy Tracking:**
-- Port 1: After 1 hour at 15W → 0.015 kWh added
-- Port 3: After 1 hour at 30W → 0.030 kWh added
-- Port 5: After 1 hour at 10W → 0.010 kWh added
-- Each sensor shows its cumulative total independently (e.g., Port 1: 1.234 kWh after several days)
+- PoE Port 1: After 1 hour at 15W → 0.015 kWh added
+- PoE Port 3: After 1 hour at 30W → 0.030 kWh added
+- PoE Port 5: After 1 hour at 10W → 0.010 kWh added
+- PDU Outlet 1: After 1 hour at 25W → 0.025 kWh added
+- PDU Outlet 3: After 1 hour at 40W → 0.040 kWh added
+- PDU Outlet 5: After 1 hour at 18W → 0.018 kWh added
+- Each sensor shows its cumulative total independently
 
 **Resetting Energy:**
-- Press the reset button for any port to zero its energy accumulation
-- Other ports continue tracking independently
+- Press the reset button for any port/outlet to zero its energy accumulation
+- Other ports/outlets continue tracking independently
 
 ## Energy Dashboard Integration
 
@@ -104,9 +121,11 @@ The created energy sensors are compatible with Home Assistant's Energy Dashboard
 
 **No energy sensors created**
 - Ensure the UniFi Network integration is set up and working
-- Verify that you have PoE-capable switches configured
-- Check that PoE port power entities are enabled (look for `sensor.switch_port_X_poe_power` entities)
-- Some PoE entities may be disabled by default - enable them in the entity settings
+- Verify that you have PoE-capable switches or PDUs configured
+- Check that power entities are enabled:
+  - PoE ports: `sensor.switch_port_X_poe_power` or similar
+  - PDU outlets: `sensor.unifi_pdu_outlet_X_outlet_power` or similar
+- Some power entities may be disabled by default - enable them in the entity settings
 
 **Energy not accumulating**
 - Verify PoE port sensors are reporting valid power values (not "unknown" or "unavailable")
@@ -122,10 +141,10 @@ The created energy sensors are compatible with Home Assistant's Energy Dashboard
 - This should happen automatically; if not, check the device ID in the sensor attributes
 - The sensor links to the same device as the corresponding PoE power sensor
 
-**Newly added PoE port not detected**
+**Newly added PoE port or PDU outlet not detected**
 - The integration listens for entity registry changes
-- If a new port isn't detected, try restarting Home Assistant
-- Check that the new PoE entity is enabled (not disabled)
+- If a new port/outlet isn't detected, try restarting Home Assistant
+- Check that the new power entity is enabled (not disabled)
 
 ## Debug Logging
 

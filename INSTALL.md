@@ -115,21 +115,27 @@ After setting up through the UI:
 
 ## What Gets Created
 
-For each PoE port on your UniFi switches, the integration creates:
+For each PoE port or PDU outlet on your UniFi devices, the integration creates:
 
-- **1 Energy Sensor** per PoE port
-  - Entity ID format: `sensor.<device_name>_port_X_energy`
+- **1 Energy Sensor** per PoE port or PDU outlet
+  - Entity ID format: 
+    - PoE: `sensor.<device_name>_port_X_energy`
+    - PDU: `sensor.<device_name>_outlet_X_energy`
   - Unit: kWh (kilowatt-hours)
   - Device Class: Energy
   - State Class: Total Increasing (for Energy Dashboard compatibility)
-  - Tracks energy consumption for that specific port
+  - Tracks energy consumption for that specific port/outlet
 
 - **1 Reset Button** per energy sensor
-  - Entity ID format: `button.<device_name>_port_X_reset_energy`
-  - Allows you to zero the energy accumulation for that port
+  - Entity ID format:
+    - PoE: `button.<device_name>_port_X_reset_energy`
+    - PDU: `button.<device_name>_outlet_X_reset_energy`
+  - Allows you to zero the energy accumulation for that port/outlet
   - Appears as a diagnostic entity under the same device
 
-**Example**: A UniFi switch with 24 PoE ports will have 24 energy sensors and 24 reset buttons, all grouped under the switch device.
+**Examples**: 
+- A UniFi switch with 24 PoE ports will have 24 energy sensors and 24 reset buttons, all grouped under the switch device.
+- A UniFi PDU with 6 outlets will have 6 energy sensors and 6 reset buttons, all grouped under the PDU device.
 
 ## Using with Energy Dashboard
 
@@ -149,18 +155,18 @@ The Energy Dashboard will now track and visualize your per-port PoE power consum
 
 ### No energy sensors appear
 
-**Check**: Do you have PoE port power sensors?
+**Check**: Do you have PoE port or PDU outlet power sensors?
 ```
-Developer Tools → States → Filter by "poe_power" or "port" and "power"
+Developer Tools → States → Filter by "poe_power" or "port" or "outlet" and "power"
 ```
 
 If no sensors appear:
 1. Verify your UniFi integration is working
-2. Ensure you have PoE-capable switches
-3. Check that PoE monitoring is enabled in the UniFi controller
-4. **Important**: Many PoE port sensors are disabled by default
+2. Ensure you have PoE-capable switches or PDUs
+3. Check that power monitoring is enabled in the UniFi controller
+4. **Important**: Many power sensors are disabled by default
    - Go to Settings → Devices & Services → UniFi → Devices
-   - Click on your switch
+   - Click on your switch or PDU
    - Look for disabled entities and enable the ones you want to track
 
 **Check**: Are the PoE sensors from the UniFi integration?

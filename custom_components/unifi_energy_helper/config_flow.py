@@ -15,7 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def _async_has_unifi_poe_devices(hass: HomeAssistant) -> bool:
-    """Check if there are any UniFi PoE devices available."""
+    """Check if there are any UniFi PoE or PDU power devices available."""
     entity_registry = er.async_get(hass)
     
     for entity_id, entry in entity_registry.entities.items():
@@ -23,7 +23,12 @@ async def _async_has_unifi_poe_devices(hass: HomeAssistant) -> bool:
             entry.platform == UNIFI_DOMAIN
             and entity_id.startswith("sensor.")
             and entry.device_id
-            and ("poe" in entity_id.lower() or "port" in entity_id.lower())
+            and (
+                "poe" in entity_id.lower() 
+                or "port" in entity_id.lower()
+                or "pdu" in entity_id.lower()
+                or "outlet" in entity_id.lower()
+            )
         ):
             return True
     return False

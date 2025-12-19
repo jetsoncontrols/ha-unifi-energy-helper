@@ -94,22 +94,24 @@ Before submitting:
 
 2. **Manual Testing**:
    - Install in a test Home Assistant instance via config flow
-   - Verify per-port energy sensors are created
+   - Verify per-port/outlet energy sensors are created for both PoE and PDU devices
    - Verify reset buttons are created for each sensor
    - Check real-time energy accumulation when power changes
    - Test reset button functionality
    - Test Home Assistant restart (state restoration)
-   - Enable a previously disabled PoE port and verify sensor creation
+   - Enable a previously disabled PoE port or PDU outlet and verify sensor creation
    - Monitor logs for errors
 
 3. **Test Edge Cases**:
-   - No PoE sensors present
-   - PoE sensors become unavailable
+   - No PoE or PDU sensors present
+   - Power sensors become unavailable
    - Multiple UniFi switches with different port counts
+   - Multiple UniFi PDUs
+   - Mixed environment with both PoE switches and PDUs
    - UniFi integration disabled/removed
-   - Dynamic port addition/removal
+   - Dynamic port/outlet addition/removal
    - Reset button pressed during active tracking
-   - Rapid power changes on ports
+   - Rapid power changes on ports/outlets
 
 ## Submitting Changes
 

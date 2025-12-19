@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-UniFi Energy Helper is a Home Assistant custom component that extends the built-in UniFi Network integration by creating synthetic energy accumulation sensors for PoE-capable network switches.
+UniFi Energy Helper is a Home Assistant custom component that extends the built-in UniFi Network integration by creating synthetic energy accumulation sensors for PoE-capable network switches and PDU (Power Distribution Unit) outlets.
 
 ## Component Structure
 
@@ -33,18 +33,18 @@ for entity_id, entry in entity_registry.entities.items():
         poe_entities.append((entity_id, entry))
 ```
 
-**Discovery Criteria (_is_poe_power_entity):**
+**Discovery Criteria (_is_unifi_power_entity):**
 - Entity platform must be `unifi`
 - Must start with `sensor.`
 - Device class must be `POWER`
 - Unit of measurement must be `WATT`
-- Entity ID or unique ID contains "port" or "poe"
+- Entity ID or unique ID contains: "port", "poe", "outlet", or "pdu"
 - Entity must have a `device_id` (linked to a device)
 - Entity must not be disabled (`disabled_by is None`)
 
-### 2. Per-Port Sensor Creation
+### 2. Per-Port/Outlet Sensor Creation
 
-For each discovered PoE power sensor, an individual energy sensor is created:
+For each discovered PoE port or PDU outlet power sensor, an individual energy sensor is created:
 
 ```python
 for poe_entity_id, poe_entry in poe_entities:
@@ -58,7 +58,7 @@ for poe_entity_id, poe_entry in poe_entities:
     energy_sensors.append(energy_sensor)
 ```
 
-This creates **one energy sensor per PoE port**, allowing granular tracking of individual port consumption.
+This creates **one energy sensor per PoE port or PDU outlet**, allowing granular tracking of individual power consumption.
 
 ### 3. Energy Sensor Properties
 
@@ -225,8 +225,8 @@ def _async_entity_registry_updated(event) -> None:
 ```
 
 This allows automatic detection of:
-- Newly discovered PoE ports
-- Previously disabled PoE entities that are enabled
+- Newly discovered PoE ports or PDU outlets
+- Previously disabled power entities that are enabled
 
 ## Data Flow Diagram
 

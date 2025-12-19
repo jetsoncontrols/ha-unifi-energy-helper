@@ -25,8 +25,8 @@ from .const import DOMAIN, SECONDS_TO_HOURS, UNIFI_DOMAIN, WATTS_TO_KILOWATTS
 _LOGGER = logging.getLogger(__name__)
 
 
-def _is_poe_power_entity(entry: er.RegistryEntry) -> bool:
-    """Check if an entity registry entry is a UniFi PoE power sensor."""
+def _is_unifi_power_entity(entry: er.RegistryEntry) -> bool:
+    """Check if an entity registry entry is a UniFi PoE port or PDU outlet power sensor."""
     if not (
         entry.platform == UNIFI_DOMAIN
         and entry.entity_id.startswith("sensor.")
@@ -37,12 +37,19 @@ def _is_poe_power_entity(entry: er.RegistryEntry) -> bool:
     ):
         return False
 
-    # Check if this is likely a PoE port power sensor
+    # Check if this is a PoE port power sensor or PDU outlet power sensor
+    entity_lower = entry.entity_id.lower()
+    unique_lower = entry.unique_id.lower() if entry.unique_id else ""
+    
     return bool(
-        "port" in entry.entity_id.lower()
-        or "poe" in entry.entity_id.lower()
-        or (entry.unique_id and "port" in entry.unique_id.lower())
-        or (entry.unique_id and "poe" in entry.unique_id.lower())
+        "port" in entity_lower
+        or "poe" in entity_lower
+        or "outlet" in entity_lower
+        or "pdu" in entity_lower
+        or "port" in unique_lower
+        or "poe" in unique_lower
+        or "outlet" in unique_lower
+        or "pdu" in unique_lower
     )
 
 
@@ -62,30 +69,30 @@ async def async_setup_entry(
     hass.data[DOMAIN]["config_entry"] = config_entry
     hass.data[DOMAIN]["tracked_poe_entities"] = set()
 
-    # Find all UniFi PoE power entities
-    poe_entities = []
+    # Find all UniFi PoE port and PDU outlet power entities
+    power_entities = []
 
     for entity_id, entry in entity_registry.entities.items():
-        if _is_poe_power_entity(entry):
+        if _is_unifi_power_entity(entry):
             _LOGGER.debug(
-                "Found UniFi PoE power entity: %s (device: %s)",
+                "Found UniFi power entity: %s (device: %s)",
                 entity_id,
                 entry.device_id,
             )
-            poe_entities.append((entity_id, entry))
+            power_entities.append((entity_id, entry))
             hass.data[DOMAIN]["tracked_poe_entities"].add(entity_id)
 
-    # Create one energy sensor for each PoE port
+    # Create one energy sensor for each PoE port / PDU outlet
     energy_sensors = []
 
-    for poe_entity_id, poe_entry in poe_entities:
-        _LOGGER.info("Creating energy sensor for PoE port: %s", poe_entity_id)
+    for power_entity_id, power_entry in power_entities:
+        _LOGGER.info("Creating energy sensor for power entity: %s", power_entity_id)
 
         energy_sensor = UniFiEnergyAccumulationSensor(
             hass=hass,
-            device_id=poe_entry.device_id,
-            poe_entity_id=poe_entity_id,
-            poe_entity_entry=poe_entry,
+            device_id=power_entry.device_id,
+            poe_entity_id=power_entity_id,
+            poe_entity_entry=power_entry,
             config_entry_id=config_entry.entry_id,
         )
         energy_sensors.append(energy_sensor)
@@ -111,12 +118,12 @@ async def async_setup_entry(
             hass.config_entries.async_forward_entry_setups(config_entry, ["button"])
         )
     else:
-        _LOGGER.warning("No UniFi PoE power entities found to create energy sensors")
+        _LOGGER.warning("No UniFi PoE or PDU power entities found to create energy sensors")
 
-    # Set up entity registry listener for new PoE entities
+    # Set up entity registry listener for new PoE/PDU entities
     @callback
     def _async_entity_registry_updated(event) -> None:
-        """Handle entity registry updates to detect new or enabled PoE entities."""
+        """Handle entity registry updates to detect new or enabled PoE/PDU power entities."""
         action = event.data["action"]
 
         # Handle both new entities and entities being enabled
@@ -138,7 +145,7 @@ async def async_setup_entry(
             if not entry or entry.disabled_by is not None or old_disabled is None:
                 return
 
-            _LOGGER.debug("Detected PoE entity being enabled: %s", entity_id)
+            _LOGGER.debug("Detected power entity being enabled: %s", entity_id)
         else:
             return
 
@@ -150,10 +157,10 @@ async def async_setup_entry(
         registry = er.async_get(hass)
         entry = registry.async_get(entity_id)
 
-        if not entry or not _is_poe_power_entity(entry) or not entry.device_id:
+        if not entry or not _is_unifi_power_entity(entry) or not entry.device_id:
             return
 
-        _LOGGER.info("Detected new/enabled UniFi PoE power entity: %s", entity_id)
+        _LOGGER.info("Detected new/enabled UniFi power entity: %s", entity_id)
         hass.data[DOMAIN]["tracked_poe_entities"].add(entity_id)
 
         # Create energy sensor for the new PoE entity
@@ -232,22 +239,28 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         if config_entry_id:
             self._attr_config_entry_id = config_entry_id
 
-        # Extract port name from the PoE entity
+        # Extract name from the power entity (PoE port or PDU outlet)
         # Use the original name or derive from entity_id
-        port_name = poe_entity_entry.original_name or poe_entity_entry.name
-        if not port_name:
+        power_name = poe_entity_entry.original_name or poe_entity_entry.name
+        if not power_name:
             # Fallback to entity_id
-            port_name = poe_entity_id.split(".")[1].replace("_", " ").title()
+            power_name = poe_entity_id.split(".")[1].replace("_", " ").title()
 
-        # Remove "Power" from the name if present, we'll add "Energy" instead
-        if "Power" in port_name:
-            port_name = port_name.replace("Power", "Energy")
-        elif "power" in port_name.lower():
-            port_name = port_name.replace("power", "Energy").replace("Power", "Energy")
+        # Remove various power-related suffixes and replace with "Energy"
+        # Handle variations like "Port 1 PoE Power", "Outlet 5 Outlet Power", "Port Power", etc.
+        if "Power" in power_name:
+            # Replace "Power" with "Energy", handling duplicates like "Outlet 5 Outlet Power"
+            energy_name = power_name.replace(" Power", " Energy")
+            # Clean up duplicates like "Outlet 5 Outlet Energy" -> "Outlet 5 Energy"
+            if "Outlet" in energy_name and energy_name.count("Outlet") > 1:
+                # Remove the redundant "Outlet" before "Energy"
+                energy_name = energy_name.replace(" Outlet Energy", " Energy")
+        elif "power" in power_name.lower():
+            energy_name = power_name.replace("power", "Energy").replace("Power", "Energy")
         else:
-            port_name = f"{port_name} Energy"
+            energy_name = f"{power_name} Energy"
 
-        self._attr_name = port_name
+        self._attr_name = energy_name
 
         # Create unique_id based on the PoE power sensor's unique_id
         if poe_entity_entry.unique_id:
@@ -267,27 +280,33 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         self._unsub_registry = None
 
     def _update_name_from_poe_entity(self, poe_entry: er.RegistryEntry) -> None:
-        """Update sensor name based on PoE entity name."""
-        port_name = poe_entry.original_name or poe_entry.name
-        if not port_name:
+        """Update sensor name based on power entity name."""
+        power_name = poe_entry.original_name or poe_entry.name
+        if not power_name:
             # Fallback to entity_id
-            port_name = self._poe_entity_id.split(".")[1].replace("_", " ").title()
+            power_name = self._poe_entity_id.split(".")[1].replace("_", " ").title()
 
-        # Remove "Power" from the name if present, we'll add "Energy" instead
-        if "Power" in port_name:
-            port_name = port_name.replace("Power", "Energy")
-        elif "power" in port_name.lower():
-            port_name = port_name.replace("power", "Energy").replace("Power", "Energy")
+        # Remove various power-related suffixes and replace with "Energy"
+        # Handle variations like "Port 1 PoE Power", "Outlet 5 Outlet Power", "Port Power", etc.
+        if "Power" in power_name:
+            # Replace "Power" with "Energy", handling duplicates like "Outlet 5 Outlet Power"
+            energy_name = power_name.replace(" Power", " Energy")
+            # Clean up duplicates like "Outlet 5 Outlet Energy" -> "Outlet 5 Energy"
+            if "Outlet" in energy_name and energy_name.count("Outlet") > 1:
+                # Remove the redundant "Outlet" before "Energy"
+                energy_name = energy_name.replace(" Outlet Energy", " Energy")
+        elif "power" in power_name.lower():
+            energy_name = power_name.replace("power", "Energy").replace("Power", "Energy")
         else:
-            port_name = f"{port_name} Energy"
+            energy_name = f"{power_name} Energy"
 
-        if self._attr_name != port_name:
+        if self._attr_name != energy_name:
             _LOGGER.debug(
                 "Updating energy sensor name from '%s' to '%s'",
                 self._attr_name,
-                port_name,
+                energy_name,
             )
-            self._attr_name = port_name
+            self._attr_name = energy_name
             self.async_write_ha_state()
 
     @property

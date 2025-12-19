@@ -4,12 +4,12 @@
     "step": {
       "user": {
         "title": "Set up UniFi Energy Helper",
-        "description": "This integration will automatically create energy sensors and reset buttons for each UniFi PoE port.\n\n• One energy sensor per PoE port\n• One reset button per energy sensor\n• Real-time energy tracking\n• Automatic discovery of new ports\n\nClick Submit to continue."
+        "description": "This integration will automatically create energy sensors and reset buttons for each UniFi PoE port and PDU outlet.\n\n• One energy sensor per PoE port or PDU outlet\n• One reset button per energy sensor\n• Real-time energy tracking\n• Automatic discovery of new ports/outlets\n\nClick Submit to continue."
       }
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed.",
-      "no_unifi_poe_devices": "No UniFi PoE devices found. Please ensure:\n• UniFi Network integration is configured\n• You have PoE-capable switches\n• PoE power monitoring is enabled\n• PoE port power entities are enabled (not disabled)"
+      "no_unifi_poe_devices": "No UniFi PoE or PDU power devices found. Please ensure:\n• UniFi Network integration is configured\n• You have PoE-capable switches or PDUs\n• Power monitoring is enabled\n• Power entities are enabled (not disabled)"
     }
   }
 }

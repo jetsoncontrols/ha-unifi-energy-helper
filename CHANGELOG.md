@@ -73,7 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation (README, INSTALL, TECHNICAL)
 - HACS support for easy installation
 - Debug logging support for troubleshooting
-- Example configuration file
 
 ### Features (Deprecated in v2.0.0)
 - Monitored all PoE ports on a switch and created a single cumulative energy sensor per device
@@ -92,6 +91,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Follows Home Assistant coding standards
 
 ## [Unreleased]
+
+### Added
+- Support for UniFi PDU (Power Distribution Unit) outlet power sensors
+- Automatic detection and energy tracking for PDU outlets alongside PoE ports
+- Smart naming logic to handle PDU outlet naming patterns (e.g., "Outlet 5 Outlet Power" → "Outlet 5 Energy")
 
 ### Planned
 - ✅ ~~Per-port energy sensors~~ (Implemented in v2.0.0)
