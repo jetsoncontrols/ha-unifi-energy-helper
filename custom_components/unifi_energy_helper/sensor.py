@@ -86,6 +86,7 @@ async def async_setup_entry(
             device_id=poe_entry.device_id,
             poe_entity_id=poe_entity_id,
             poe_entity_entry=poe_entry,
+            config_entry_id=config_entry.entry_id,
         )
         energy_sensors.append(energy_sensor)
 
@@ -115,11 +116,31 @@ async def async_setup_entry(
     # Set up entity registry listener for new PoE entities
     @callback
     def _async_entity_registry_updated(event) -> None:
-        """Handle entity registry updates to detect new PoE entities."""
-        if event.data["action"] != "create":
-            return
+        """Handle entity registry updates to detect new or enabled PoE entities."""
+        action = event.data["action"]
 
-        entity_id = event.data["entity_id"]
+        # Handle both new entities and entities being enabled
+        if action == "create":
+            entity_id = event.data["entity_id"]
+        elif action == "update":
+            entity_id = event.data["entity_id"]
+            changes = event.data.get("changes", {})
+
+            # Only process if the entity was enabled (disabled_by changed from something to None)
+            if "disabled_by" not in changes:
+                return
+
+            # Check if entity was just enabled
+            old_disabled = changes.get("disabled_by")
+            registry = er.async_get(hass)
+            entry = registry.async_get(entity_id)
+
+            if not entry or entry.disabled_by is not None or old_disabled is None:
+                return
+
+            _LOGGER.debug("Detected PoE entity being enabled: %s", entity_id)
+        else:
+            return
 
         # Skip if we're already tracking this entity
         if entity_id in hass.data[DOMAIN]["tracked_poe_entities"]:
@@ -132,15 +153,17 @@ async def async_setup_entry(
         if not entry or not _is_poe_power_entity(entry) or not entry.device_id:
             return
 
-        _LOGGER.info("Detected new UniFi PoE power entity: %s", entity_id)
+        _LOGGER.info("Detected new/enabled UniFi PoE power entity: %s", entity_id)
         hass.data[DOMAIN]["tracked_poe_entities"].add(entity_id)
 
         # Create energy sensor for the new PoE entity
+        config_entry = hass.data[DOMAIN].get("config_entry")
         energy_sensor = UniFiEnergyAccumulationSensor(
             hass=hass,
             device_id=entry.device_id,
             poe_entity_id=entity_id,
             poe_entity_entry=entry,
+            config_entry_id=config_entry.entry_id if config_entry else None,
         )
 
         # Add the sensor
@@ -164,6 +187,9 @@ async def async_setup_entry(
             hass=hass,
             device_id=entry.device_id,
             energy_sensor=energy_sensor,
+            config_entry_id=energy_sensor._attr_config_entry_id
+            if hasattr(energy_sensor, "_attr_config_entry_id")
+            else None,  # noqa: SLF001
         )
 
         # Add button if button platform is available
@@ -194,12 +220,17 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         device_id: str,
         poe_entity_id: str,
         poe_entity_entry: er.RegistryEntry,
+        config_entry_id: str | None = None,
     ) -> None:
         """Initialize the energy sensor."""
         self.hass = hass
         self._device_id = device_id
         self._poe_entity_id = poe_entity_id
         self._poe_entity_entry = poe_entity_entry
+
+        # Link to config entry
+        if config_entry_id:
+            self._attr_config_entry_id = config_entry_id
 
         # Extract port name from the PoE entity
         # Use the original name or derive from entity_id
@@ -257,6 +288,27 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
             "last_power_watts": self._last_power_watts,
         }
 
+    async def async_internal_added_to_hass(self) -> None:
+        """Call when the entity is added to hass (including when enabled)."""
+        await super().async_internal_added_to_hass()
+
+        # Set up state tracking if not already set up and entity is enabled
+        if self._unsub_update is None and self.enabled:
+            self._unsub_update = async_track_state_change_event(
+                self.hass,
+                [self._poe_entity_id],
+                self._async_power_changed,
+            )
+            _LOGGER.debug("Started tracking state for %s", self._poe_entity_id)
+
+    async def async_internal_will_remove_from_hass(self) -> None:
+        """Call when the entity is about to be removed from hass (including when disabled)."""
+        await super().async_internal_will_remove_from_hass()
+
+        # Clean up listeners when disabled
+        self._cleanup_listeners()
+        _LOGGER.debug("Stopped tracking state for %s", self._poe_entity_id)
+
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
@@ -296,13 +348,6 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         # Call the callback directly to update the device
         _async_update_device()
 
-        # Track state changes of the power entity
-        self._unsub_update = async_track_state_change_event(
-            self.hass,
-            [self._poe_entity_id],
-            self._async_power_changed,
-        )
-
         # Listen for reset events
         @callback
         def _async_handle_reset_event(event: Event) -> None:
@@ -336,6 +381,10 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         self.async_write_ha_state()
 
         # Clean up listeners
+        self._cleanup_listeners()
+
+    def _cleanup_listeners(self) -> None:
+        """Clean up state change listeners."""
         if self._unsub_update:
             self._unsub_update()
             self._unsub_update = None

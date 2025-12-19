@@ -115,15 +115,21 @@ After setting up through the UI:
 
 ## What Gets Created
 
-For each UniFi switch/device with PoE ports, the integration creates:
+For each PoE port on your UniFi switches, the integration creates:
 
-- **1 Energy Sensor** per device (not per port)
-  - Entity ID format: `sensor.<device_name>_poe_energy`
+- **1 Energy Sensor** per PoE port
+  - Entity ID format: `sensor.<device_name>_port_X_energy`
   - Unit: kWh (kilowatt-hours)
   - Device Class: Energy
   - State Class: Total Increasing (for Energy Dashboard compatibility)
+  - Tracks energy consumption for that specific port
 
-The energy sensor accumulates power from **all PoE ports** on the device.
+- **1 Reset Button** per energy sensor
+  - Entity ID format: `button.<device_name>_port_X_reset_energy`
+  - Allows you to zero the energy accumulation for that port
+  - Appears as a diagnostic entity under the same device
+
+**Example**: A UniFi switch with 24 PoE ports will have 24 energy sensors and 24 reset buttons, all grouped under the switch device.
 
 ## Using with Energy Dashboard
 
@@ -131,11 +137,13 @@ To track PoE energy consumption in Home Assistant's Energy Dashboard:
 
 1. Go to **Settings** → **Dashboards** → **Energy**
 2. Under **Device consumption**, click **Add Consumption**
-3. Select your UniFi device's **PoE Energy** sensor
+3. Select individual port energy sensors (e.g., "Port 1 Energy", "Port 5 Energy")
+   - You can add multiple sensors to track different devices or ports
+   - Add all ports to see total switch consumption
 4. Configure the cost per kWh (optional)
 5. Click **Save**
 
-The Energy Dashboard will now track and visualize your PoE power consumption!
+The Energy Dashboard will now track and visualize your per-port PoE power consumption!
 
 ## Troubleshooting
 
@@ -143,18 +151,29 @@ The Energy Dashboard will now track and visualize your PoE power consumption!
 
 **Check**: Do you have PoE port power sensors?
 ```
-Developer Tools → States → Filter by "poe_power"
+Developer Tools → States → Filter by "poe_power" or "port" and "power"
 ```
 
 If no sensors appear:
 1. Verify your UniFi integration is working
 2. Ensure you have PoE-capable switches
 3. Check that PoE monitoring is enabled in the UniFi controller
+4. **Important**: Many PoE port sensors are disabled by default
+   - Go to Settings → Devices & Services → UniFi → Devices
+   - Click on your switch
+   - Look for disabled entities and enable the ones you want to track
 
 **Check**: Are the PoE sensors from the UniFi integration?
 - Entity IDs should start with `sensor.`
 - Platform should be `unifi`
 - Look in the entity attributes
+
+### Reset buttons don't appear
+
+1. Reset buttons are created automatically for each energy sensor
+2. They are marked as diagnostic entities (may be hidden by default)
+3. Check Settings → Devices & Services → UniFi Energy Helper → Your Device
+4. Look for "Show disabled entities" or filter to show diagnostic entities
 
 ### Energy not accumulating
 

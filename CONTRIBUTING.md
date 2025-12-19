@@ -75,9 +75,12 @@ async def calculate_energy(
 
 ### File Organization
 
-- `__init__.py`: Component initialization only
+- `__init__.py`: Component initialization and platform coordination
+- `button.py`: Reset button entities implementation
+- `config_flow.py`: UI-based configuration flow
 - `const.py`: All constants and configuration defaults
-- `sensor.py`: Sensor platform implementation
+- `sensor.py`: Energy sensor platform with event-driven tracking
+- `strings.json`: UI text for config flow
 - `manifest.json`: Metadata (update version on changes)
 
 ### Testing Your Changes
@@ -90,17 +93,23 @@ Before submitting:
    ```
 
 2. **Manual Testing**:
-   - Install in a test Home Assistant instance
-   - Verify energy sensors are created
-   - Check energy accumulation over time
+   - Install in a test Home Assistant instance via config flow
+   - Verify per-port energy sensors are created
+   - Verify reset buttons are created for each sensor
+   - Check real-time energy accumulation when power changes
+   - Test reset button functionality
    - Test Home Assistant restart (state restoration)
+   - Enable a previously disabled PoE port and verify sensor creation
    - Monitor logs for errors
 
 3. **Test Edge Cases**:
    - No PoE sensors present
    - PoE sensors become unavailable
-   - Multiple UniFi switches
+   - Multiple UniFi switches with different port counts
    - UniFi integration disabled/removed
+   - Dynamic port addition/removal
+   - Reset button pressed during active tracking
+   - Rapid power changes on ports
 
 ## Submitting Changes
 
@@ -196,13 +205,17 @@ Good first contributions:
 - Code cleanup and refactoring
 - Adding debug logging
 - Improving error messages
+- Enhancing config flow UI text
 
 More advanced contributions:
 
-- New features (per-port sensors, statistics, etc.)
+- New features (aggregated device sensors, statistics, auto-reset, etc.)
 - Performance optimizations
+- Event listener efficiency improvements
 - Integration with other HA components
-- Configuration UI (config flow)
+- Configuration options UI
+- Cost tracking per port
+- Power factor calculations
 
 ## Home Assistant Integration Standards
 

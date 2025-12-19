@@ -51,6 +51,9 @@ async def async_setup_entry(
             hass=hass,
             device_id=device_id,
             energy_sensor=sensor,
+            config_entry_id=sensor._attr_config_entry_id
+            if hasattr(sensor, "_attr_config_entry_id")
+            else None,  # noqa: SLF001
         )
         reset_buttons.append(reset_button)
 
@@ -58,7 +61,9 @@ async def async_setup_entry(
         async_add_entities(reset_buttons, True)
         _LOGGER.info("Added %d UniFi Energy Helper reset buttons", len(reset_buttons))
     else:
-        _LOGGER.debug("No UniFi Energy Helper energy sensors found to create reset buttons")
+        _LOGGER.debug(
+            "No UniFi Energy Helper energy sensors found to create reset buttons"
+        )
 
 
 class UniFiEnergyResetButton(ButtonEntity):
@@ -71,11 +76,16 @@ class UniFiEnergyResetButton(ButtonEntity):
         hass: HomeAssistant,
         device_id: str,
         energy_sensor: Any,
+        config_entry_id: str | None = None,
     ) -> None:
         """Initialize the reset button."""
         self.hass = hass
         self._device_id = device_id
         self._energy_sensor = energy_sensor
+
+        # Link to config entry
+        if config_entry_id:
+            self._attr_config_entry_id = config_entry_id
 
         # Extract name from the energy sensor
         energy_name = energy_sensor._attr_name or "Energy"  # noqa: SLF001
@@ -103,6 +113,16 @@ class UniFiEnergyResetButton(ButtonEntity):
         # by not providing device_info. The device_id will be set in the registry.
         return None
 
+    async def async_internal_added_to_hass(self) -> None:
+        """Call when the entity is added to hass (including when enabled)."""
+        await super().async_internal_added_to_hass()
+        _LOGGER.debug("Button %s enabled", self.entity_id)
+
+    async def async_internal_will_remove_from_hass(self) -> None:
+        """Call when the entity is about to be removed from hass (including when disabled)."""
+        await super().async_internal_will_remove_from_hass()
+        _LOGGER.debug("Button %s disabled", self.entity_id)
+
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
@@ -125,6 +145,14 @@ class UniFiEnergyResetButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press to reset energy accumulation."""
+        # Ensure button is enabled before processing
+        if not self.enabled:
+            _LOGGER.warning(
+                "Button %s is disabled and cannot be pressed",
+                self.entity_id,
+            )
+            return
+
         # Call reset method directly on the sensor
         if hasattr(self._energy_sensor, "_reset_energy"):
             _LOGGER.info(

@@ -4,11 +4,13 @@ A Home Assistant custom component that automatically creates synthetic Energy (k
 
 ## Features
 
-- 🔌 **Automatic Discovery**: Automatically finds all UniFi PoE power sensors
-- ⚡ **Energy Accumulation**: Creates energy (kWh) sensors that accumulate power consumption over time
-- 📊 **Device Integration**: Energy sensors appear under the same device as the UniFi Network switch
-- 🔄 **Real-time Tracking**: Updates energy consumption every 60 seconds
-- 📈 **State Preservation**: Tracks total energy consumption as a monotonically increasing value
+- 🔌 **Automatic Discovery**: Automatically finds all UniFi PoE power sensors for each port
+- ⚡ **Per-Port Energy Tracking**: Creates individual energy (kWh) sensors for each PoE port
+- 📊 **Device Integration**: Energy sensors and reset buttons appear under the same device as the UniFi Network switch
+- 🔄 **Real-time Tracking**: Updates energy consumption instantly when power changes (event-driven)
+- 🔘 **Reset Buttons**: Each energy sensor has an associated reset button to zero the accumulation
+- 📈 **State Preservation**: Tracks total energy consumption as a monotonically increasing value, persists across restarts
+- 🆕 **Dynamic Discovery**: Automatically detects newly added or enabled PoE ports
 
 ## Requirements
 
@@ -51,21 +53,40 @@ No YAML configuration needed! The integration will automatically discover all Un
 ## How It Works
 
 1. **Discovery**: On startup, the integration scans the entity registry for UniFi power sensors (PoE ports)
-2. **Grouping**: Groups PoE port sensors by their parent device (the UniFi switch)
-3. **Energy Sensor Creation**: Creates one energy accumulation sensor per device with PoE ports
-4. **Energy Calculation**: Every 60 seconds, it:
-   - Reads the current power consumption from all PoE ports on the device
-   - Calculates the energy consumed since the last update (Power × Time)
-   - Adds it to the total accumulated energy
-5. **Display**: The energy sensor appears under the same device as the switch in the Home Assistant UI
+2. **Sensor Creation**: Creates one energy accumulation sensor **per PoE port**
+3. **Button Creation**: Creates a reset button for each energy sensor
+4. **Device Linking**: Links all sensors and buttons to the same device as the UniFi switch
+5. **Real-time Energy Calculation**: When power changes on any port:
+   - Detects the power state change immediately via event listener
+   - Calculates the time elapsed since the last change
+   - Computes energy consumed: Energy = Power × Time
+   - Adds it to the accumulated total for that port
+6. **Dynamic Updates**: Automatically creates new energy sensors and buttons when:
+   - New PoE ports are detected
+   - Previously disabled PoE entities are enabled
+7. **Display**: Energy sensors and reset buttons appear under the same device as the switch in the Home Assistant UI
 
 ## Example
 
 If you have a UniFi switch with 8 PoE ports, and ports 1, 3, and 5 have devices connected drawing 15W, 30W, and 10W respectively:
 
-- Total power: 55W
-- After 1 hour: 55Wh = 0.055 kWh added to the total
-- Energy sensor shows cumulative total (e.g., 1.234 kWh after several days)
+**Created Entities:**
+- `sensor.switch_port_1_energy` - Energy sensor for Port 1 (tracks 15W device)
+- `button.switch_port_1_reset_energy` - Reset button for Port 1
+- `sensor.switch_port_3_energy` - Energy sensor for Port 3 (tracks 30W device)
+- `button.switch_port_3_reset_energy` - Reset button for Port 3
+- `sensor.switch_port_5_energy` - Energy sensor for Port 5 (tracks 10W device)
+- `button.switch_port_5_reset_energy` - Reset button for Port 5
+
+**Energy Tracking:**
+- Port 1: After 1 hour at 15W → 0.015 kWh added
+- Port 3: After 1 hour at 30W → 0.030 kWh added
+- Port 5: After 1 hour at 10W → 0.010 kWh added
+- Each sensor shows its cumulative total independently (e.g., Port 1: 1.234 kWh after several days)
+
+**Resetting Energy:**
+- Press the reset button for any port to zero its energy accumulation
+- Other ports continue tracking independently
 
 ## Energy Dashboard Integration
 
@@ -73,8 +94,11 @@ The created energy sensors are compatible with Home Assistant's Energy Dashboard
 
 1. Go to Settings → Dashboards → Energy
 2. Under "Device consumption", click "Add Consumption"
-3. Select your UniFi device's "PoE Energy" sensor
-4. Save and view your PoE power consumption over time!
+3. Select individual port energy sensors (e.g., "Port 1 Energy", "Port 3 Energy")
+4. Add multiple ports to track total switch consumption or monitor high-power devices
+5. Save and view your PoE power consumption over time!
+
+**Tip**: You can add all port energy sensors to get a complete view of your switch's PoE consumption.
 
 ## Troubleshooting
 
@@ -82,13 +106,26 @@ The created energy sensors are compatible with Home Assistant's Energy Dashboard
 - Ensure the UniFi Network integration is set up and working
 - Verify that you have PoE-capable switches configured
 - Check that PoE port power entities are enabled (look for `sensor.switch_port_X_poe_power` entities)
+- Some PoE entities may be disabled by default - enable them in the entity settings
 
 **Energy not accumulating**
 - Verify PoE port sensors are reporting valid power values (not "unknown" or "unavailable")
 - Check the Home Assistant logs for any errors from `unifi_energy_helper`
+- Energy only accumulates when power values change or time elapses
+
+**Reset button doesn't appear**
+- Reset buttons are created after energy sensors are initialized
+- Check if the button entity is disabled in entity settings
+- Restart Home Assistant if buttons don't appear after initial setup
 
 **Energy sensor not showing under the correct device**
 - This should happen automatically; if not, check the device ID in the sensor attributes
+- The sensor links to the same device as the corresponding PoE power sensor
+
+**Newly added PoE port not detected**
+- The integration listens for entity registry changes
+- If a new port isn't detected, try restarting Home Assistant
+- Check that the new PoE entity is enabled (not disabled)
 
 ## Debug Logging
 

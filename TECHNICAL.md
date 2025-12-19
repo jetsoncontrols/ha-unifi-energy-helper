@@ -8,10 +8,12 @@ UniFi Energy Helper is a Home Assistant custom component that extends the built-
 
 ```
 custom_components/unifi_energy_helper/
-├── __init__.py         # Component initialization and setup
+├── __init__.py         # Component initialization and platform setup coordination
+├── button.py          # Reset button entities
+├── config_flow.py     # UI-based configuration flow
 ├── const.py           # Constants and configuration defaults
 ├── manifest.json      # Component metadata and dependencies
-├── sensor.py          # Energy sensor implementation
+├── sensor.py          # Energy accumulation sensors with state restoration
 └── strings.json       # UI strings and translations
 ```
 
@@ -19,113 +21,137 @@ custom_components/unifi_energy_helper/
 
 ### 1. Discovery Phase
 
-When Home Assistant loads the integration (via `configuration.yaml`), the sensor platform performs entity discovery:
+When Home Assistant loads the integration (via config flow), the sensor platform performs entity discovery:
 
 ```python
-# In sensor.py - async_setup_platform()
+# In sensor.py - async_setup_entry()
 entity_registry = er.async_get(hass)
 
 for entity_id, entry in entity_registry.entities.items():
-    if (entry.platform == "unifi" and 
-        entry.device_class == SensorDeviceClass.POWER and
-        entry.unit_of_measurement == UnitOfPower.WATT and
-        ("port" in entity_id.lower() or "poe" in entity_id.lower())):
+    if _is_poe_power_entity(entry):
         # Found a PoE power sensor!
+        poe_entities.append((entity_id, entry))
 ```
 
-**Discovery Criteria:**
+**Discovery Criteria (_is_poe_power_entity):**
 - Entity platform must be `unifi`
+- Must start with `sensor.`
 - Device class must be `POWER`
 - Unit of measurement must be `WATT`
 - Entity ID or unique ID contains "port" or "poe"
 - Entity must have a `device_id` (linked to a device)
+- Entity must not be disabled (`disabled_by is None`)
 
-### 2. Grouping Phase
+### 2. Per-Port Sensor Creation
 
-PoE power sensors are grouped by their parent device (the UniFi switch):
+For each discovered PoE power sensor, an individual energy sensor is created:
 
 ```python
-device_poe_map = {}  # device_id → [entity_id, entity_id, ...]
-
-for entity_id, entry in poe_entities:
-    if entry.device_id not in device_poe_map:
-        device_poe_map[entry.device_id] = []
-    device_poe_map[entry.device_id].append(entity_id)
+for poe_entity_id, poe_entry in poe_entities:
+    energy_sensor = UniFiEnergyAccumulationSensor(
+        hass=hass,
+        device_id=poe_entry.device_id,
+        poe_entity_id=poe_entity_id,
+        poe_entity_entry=poe_entry,
+        config_entry_id=config_entry.entry_id,
+    )
+    energy_sensors.append(energy_sensor)
 ```
 
-This ensures one energy sensor per switch device, regardless of how many PoE ports it has.
+This creates **one energy sensor per PoE port**, allowing granular tracking of individual port consumption.
 
-### 3. Sensor Creation
+### 3. Energy Sensor Properties
 
-For each device with PoE ports, an `UniFiEnergyAccumulationSensor` is created:
+Each `UniFiEnergyAccumulationSensor` has these properties:
 
 ```python
 class UniFiEnergyAccumulationSensor(RestoreSensor):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_should_poll = False  # Event-driven, no polling
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 ```
 
 **Key Properties:**
 - **Device Class**: `ENERGY` - Tells HA this is an energy sensor
 - **State Class**: `TOTAL_INCREASING` - Enables Energy Dashboard integration
 - **Unit**: `kWh` - Standard energy unit
+- **Should Poll**: `False` - Uses event listeners instead of polling
+- **Entity Category**: `DIAGNOSTIC` - Marks as diagnostic/utility entity
 - **Restoration**: Inherits from `RestoreSensor` to preserve state across restarts
 
 ### 4. Device Linking
 
-To make the energy sensor appear under the same device as the switch:
+Both energy sensors and reset buttons link to the existing UniFi device:
 
 ```python
+# In sensor.py and button.py
 async def async_added_to_hass(self):
     # Link to the existing UniFi device
     entity_registry = er.async_get(self.hass)
-    entity_registry.async_update_entity(
-        self.entity_id,
-        device_id=self._device_id,
-    )
+    
+    @callback
+    def _async_update_device():
+        if self.entity_id:
+            entity_registry.async_update_entity(
+                self.entity_id,
+                device_id=self._device_id,
+            )
+    
+    _async_update_device()
 ```
 
-This updates the entity registry to associate the energy sensor with the UniFi device, making it appear in the same device card in the UI.
+This ensures all entities appear grouped under the UniFi switch device in the UI.
 
-### 5. Energy Accumulation
+### 5. Event-Driven Energy Accumulation
 
-Every 60 seconds (configurable via `DEFAULT_SCAN_INTERVAL`), the sensor updates:
+Energy accumulation happens **immediately** when power changes, using event listeners:
 
 ```python
+# Set up state change listener
+self._unsub_update = async_track_state_change_event(
+    self.hass,
+    [self._poe_entity_id],
+    self._async_power_changed,
+)
+
 @callback
-async def _async_update(self, now: datetime | None = None):
+def _async_power_changed(self, event) -> None:
+    new_state = event.data.get("new_state")
+    new_power_watts = float(new_state.state)
     current_time = dt_util.utcnow()
-    time_delta_seconds = (current_time - self._last_update).total_seconds()
     
-    # Sum power from all PoE ports
-    total_power_watts = sum([
-        float(self.hass.states.get(entity_id).state)
-        for entity_id in self._poe_entity_ids
-        if state is valid
-    ])
-    
-    # Calculate energy: P (W) × t (s) / 3600 / 1000 = E (kWh)
-    energy_increment_kwh = (
-        total_power_watts * 
-        time_delta_seconds * 
-        SECONDS_TO_HOURS * 
-        WATTS_TO_KILOWATTS
-    )
-    
-    self._total_energy_kwh += energy_increment_kwh
+    # Calculate energy increment since last update
+    self._calculate_energy_increment(current_time, new_power_watts)
+    self.async_write_ha_state()
 ```
 
-**Energy Calculation:**
-```
-Energy (kWh) = Power (W) × Time (s) × (1/3600 s/h) × (1/1000 W/kW)
+**Energy Calculation (Riemann Sum - Left Endpoint):**
+```python
+def _calculate_energy_increment(self, current_time, new_power_watts):
+    if self._last_update_time and self._last_power_watts:
+        time_delta_seconds = (current_time - self._last_update_time).total_seconds()
+        
+        # Use previous power for the elapsed time period
+        energy_increment_kwh = (
+            self._last_power_watts *
+            time_delta_seconds *
+            SECONDS_TO_HOURS *
+            WATTS_TO_KILOWATTS
+        )
+        
+        self._total_energy_kwh += energy_increment_kwh
+    
+    # Update tracking variables
+    self._last_power_watts = new_power_watts
+    self._last_update_time = current_time
 ```
 
-Example:
-- Power: 55W (from 3 PoE ports: 15W + 30W + 10W)
-- Time: 60 seconds
-- Energy: 55 × 60 × (1/3600) × (1/1000) = 0.000917 kWh
-- After 1 hour: ~0.055 kWh
+**Example:**
+- Port drawing 15W for 1 hour
+- Energy: 15W × 3600s × (1/3600) × (1/1000) = 0.015 kWh
+- Updates happen in real-time as power changes, not on a schedule
 
 ### 6. State Restoration
 
@@ -133,13 +159,74 @@ When Home Assistant restarts, the sensor restores its previous value:
 
 ```python
 async def async_added_to_hass(self):
+    await super().async_added_to_hass()
+    
     last_sensor_data = await self.async_get_last_sensor_data()
     
-    if last_sensor_data and last_sensor_data.native_value:
-        self._total_energy_kwh = float(last_sensor_data.native_value)
+    if last_sensor_data and last_sensor_data.native_value is not None:
+        try:
+            self._total_energy_kwh = float(last_sensor_data.native_value)
+            _LOGGER.info(
+                "Restored energy state for %s: %.3f kWh",
+                self._poe_entity_id,
+                self._total_energy_kwh,
+            )
+        except (ValueError, TypeError):
+            _LOGGER.warning("Could not restore energy state, starting from 0")
 ```
 
 This ensures energy accumulation continues seamlessly across restarts.
+
+### 7. Reset Button Integration
+
+Each energy sensor has an associated reset button:
+
+```python
+class UniFiEnergyResetButton(ButtonEntity):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    
+    async def async_press(self) -> None:
+        # Call reset method directly on the sensor
+        if hasattr(self._energy_sensor, "_reset_energy"):
+            self._energy_sensor._reset_energy()
+```
+
+The reset button calls the sensor's reset method:
+
+```python
+@callback
+def _reset_energy(self) -> None:
+    _LOGGER.info("Resetting energy for %s from %.3f kWh to 0")
+    self._total_energy_kwh = 0.0
+    self._last_update_time = dt_util.utcnow()
+    # Keep last power reading to continue tracking
+    self.async_write_ha_state()
+```
+
+### 8. Dynamic Entity Creation
+
+The integration listens for new or enabled PoE entities:
+
+```python
+@callback
+def _async_entity_registry_updated(event) -> None:
+    action = event.data["action"]
+    
+    if action == "create" or (action == "update" and entity_was_enabled):
+        entity_id = event.data["entity_id"]
+        
+        if _is_poe_power_entity(entry) and not already_tracked:
+            # Create new energy sensor and button
+            energy_sensor = UniFiEnergyAccumulationSensor(...)
+            async_add_entities([energy_sensor], True)
+            
+            reset_button = UniFiEnergyResetButton(...)
+            button_add_entities([reset_button], True)
+```
+
+This allows automatic detection of:
+- Newly discovered PoE ports
+- Previously disabled PoE entities that are enabled
 
 ## Data Flow Diagram
 
@@ -148,64 +235,94 @@ This ensures energy accumulation continues seamlessly across restarts.
 │                    Home Assistant Core                       │
 └───────────────────────┬─────────────────────────────────────┘
                         │
-                        │ loads integration
+                        │ loads integration (config flow)
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              UniFi Energy Helper Integration                  │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ 1. Discovery: Scan entity registry for PoE sensors  │   │
+│  │    - Find all enabled UniFi PoE power entities      │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │ 2. Grouping: Group sensors by device_id             │   │
+│  │ 2. Create energy sensor for EACH PoE port          │   │
+│  │    - One sensor per port, not per device           │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │ 3. Create energy sensor for each device             │   │
+│  │ 3. Create reset button for each energy sensor      │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                        │                                     │
+│                        ▼                                     │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ 4. Set up entity registry listener                 │   │
+│  │    - Detect new/enabled PoE entities dynamically   │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│           UniFi Energy Accumulation Sensor                   │
+│      UniFi Energy Accumulation Sensor (per port)            │
 │                                                              │
-│  Every 60 seconds:                                           │
+│  On state change event (real-time):                         │
 │  ┌────────────────────────────────────────────────┐         │
-│  │ 1. Read power from all PoE port sensors       │         │
-│  │    (sensor.switch_port_1_poe_power, etc.)     │         │
+│  │ 1. Power state changes for PoE port            │         │
+│  │    Event: sensor.switch_port_1_poe_power       │         │
 │  └────────────────────────────────────────────────┘         │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌────────────────────────────────────────────────┐         │
-│  │ 2. Calculate time delta since last update     │         │
+│  │ 2. Calculate time delta since last change     │         │
+│  │    Δt = current_time - last_update_time        │         │
 │  └────────────────────────────────────────────────┘         │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌────────────────────────────────────────────────┐         │
-│  │ 3. Calculate energy increment                 │         │
-│  │    E = P × Δt / 3600 / 1000                   │         │
+│  │ 3. Calculate energy using PREVIOUS power      │         │
+│  │    E = P_previous × Δt / 3600 / 1000           │         │
+│  │    (Riemann sum - left endpoint)               │         │
 │  └────────────────────────────────────────────────┘         │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌────────────────────────────────────────────────┐         │
-│  │ 4. Add to total accumulated energy            │         │
+│  │ 4. Add increment to total energy              │         │
+│  │    total_kwh += energy_increment_kwh           │         │
 │  └────────────────────────────────────────────────┘         │
 │                        │                                     │
 │                        ▼                                     │
 │  ┌────────────────────────────────────────────────┐         │
-│  │ 5. Update state in Home Assistant             │         │
-│  │    sensor.switch_poe_energy = X.XXX kWh       │         │
+│  │ 5. Update tracking variables                  │         │
+│  │    last_power = new_power                      │         │
+│  │    last_update_time = current_time             │         │
+│  └────────────────────────────────────────────────┘         │
+│                        │                                     │
+│                        ▼                                     │
+│  ┌────────────────────────────────────────────────┐         │
+│  │ 6. Write state to Home Assistant              │         │
+│  │    sensor.switch_port_1_energy = X.XXX kWh     │         │
+│  └────────────────────────────────────────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Reset Button (per sensor)                   │
+│  ┌────────────────────────────────────────────────┐         │
+│  │ When pressed:                                  │         │
+│  │ • Call sensor._reset_energy()                  │         │
+│  │ • Set total_energy_kwh = 0.0                   │         │
+│  │ • Keep tracking current power                  │         │
 │  └────────────────────────────────────────────────┘         │
 └─────────────────────────────────────────────────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            Home Assistant Energy Dashboard                   │
-│  • Visualizes energy consumption over time                  │
+│  • Visualizes per-port energy consumption                   │
 │  • Shows cost calculations (if configured)                  │
-│  • Compares with other energy sources                       │
+│  • Can track multiple ports individually                    │
+│  • Add all ports for total switch consumption               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -231,17 +348,22 @@ This ensures energy accumulation continues seamlessly across restarts.
 {
   "domain": "unifi_energy_helper",
   "name": "UniFi Energy Helper",
+  "codeowners": ["@jetsoncontrols"],
+  "config_flow": true,
   "dependencies": ["unifi"],
-  "integration_type": "device",
+  "integration_type": "helper",
   "iot_class": "local_polling",
-  "version": "1.0.0"
+  "requirements": [],
+  "version": "2.0.0"
 }
 ```
 
 **Key Fields:**
+- `config_flow`: `true` - Uses UI-based configuration
 - `dependencies`: Ensures UniFi integration loads first
-- `integration_type`: "device" - associates with devices
-- `iot_class`: "local_polling" - reads data periodically from local entities
+- `integration_type`: "helper" - Provides helper functionality
+- `iot_class`: "local_polling" - Monitors local entity state changes
+- `version`: "2.0.0" - Current version with per-port tracking
 
 ### Constants (const.py)
 
@@ -267,22 +389,33 @@ The component heavily relies on Home Assistant's entity registry:
 
 - **Per Energy Sensor**:
   - ~1KB for sensor state
-  - List of PoE entity IDs (8-16 entities typically)
-  - Total: ~2-3KB per device
+  - Reference to one PoE entity ID
+  - Tracking variables (power, time)
+  - Total: ~1-2KB per port sensor
+
+- **Per Reset Button**:
+  - ~500 bytes for button state
+  - Reference to energy sensor
+  - Total: ~500 bytes per button
 
 ### CPU Usage
 
-- **Every 60 seconds per sensor**:
-  - Read 8-16 entity states: ~1ms
+- **Event-driven (on power change)**:
+  - State change event handler: <0.5ms
+  - Calculate time delta: <0.1ms
   - Calculate energy increment: <0.1ms
   - Update state: ~1ms
-  - **Total**: ~2-3ms per sensor per minute
+  - **Total**: ~2ms per power change per port
+
+- **Idle**: No CPU usage when power is stable
 
 ### Database Impact
 
-- **State updates**: Once per 60 seconds per sensor
+- **State updates**: Only when power changes (variable frequency)
 - **Size**: ~100 bytes per state update
-- **Daily**: 1,440 updates × 100 bytes = ~140KB per sensor per day
+- **Daily estimate**: Depends on device power fluctuations
+  - Stable device (few changes): ~50 updates/day = ~5KB
+  - Variable device (frequent changes): ~500 updates/day = ~50KB
 
 ## Security Considerations
 
@@ -307,20 +440,26 @@ The component heavily relies on Home Assistant's entity registry:
 |----------|------------------|
 | No PoE sensors | Warning logged, no sensors created |
 | PoE sensors unavailable | Energy accumulation pauses, no errors |
-| Home Assistant restart | Energy value restored from previous state |
-| UniFi integration removed | Energy sensor becomes unavailable |
-| Multiple switches | One energy sensor per switch |
+| Home Assistant restart | Energy values restored from previous state |
+| UniFi integration removed | Energy sensors become unavailable |
+| Multiple switches | One energy sensor per PoE port per switch |
+| Reset button pressed | Energy resets to 0, tracking continues |
+| New PoE port enabled | Sensor and button created dynamically |
+| PoE port disabled | Energy sensor becomes unavailable |
+| Power changes frequently | Each change accumulates correctly |
 
 ## Future Enhancements
 
 Potential improvements for future versions:
 
-1. **Configurable scan interval**: Allow users to customize update frequency
-2. **Per-port energy**: Option to create energy sensors per port
-3. **Statistics**: Add min/max/avg power attributes
-4. **Notifications**: Alert when power exceeds thresholds
-5. **Cost calculation**: Built-in cost per kWh tracking
-6. **Historical data**: Export energy data to CSV
+1. **Aggregated sensors**: Option to create device-level total energy sensors
+2. **Statistics**: Add min/max/avg power attributes to energy sensors
+3. **Notifications**: Alert when power or energy exceeds thresholds
+4. **Cost calculation**: Built-in cost per kWh tracking per port
+5. **Historical data**: Export energy data to CSV
+6. **Auto-reset**: Schedule automatic resets (daily, weekly, monthly)
+7. **Power factor**: Support for apparent vs real power calculations
+8. **Comparison views**: Built-in comparisons between ports
 
 ## Contributing
 
