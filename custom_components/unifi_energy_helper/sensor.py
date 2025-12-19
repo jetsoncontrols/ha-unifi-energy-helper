@@ -264,6 +264,31 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         # For tracking state changes and reset events
         self._unsub_update = None
         self._unsub_reset = None
+        self._unsub_registry = None
+
+    def _update_name_from_poe_entity(self, poe_entry: er.RegistryEntry) -> None:
+        """Update sensor name based on PoE entity name."""
+        port_name = poe_entry.original_name or poe_entry.name
+        if not port_name:
+            # Fallback to entity_id
+            port_name = self._poe_entity_id.split(".")[1].replace("_", " ").title()
+
+        # Remove "Power" from the name if present, we'll add "Energy" instead
+        if "Power" in port_name:
+            port_name = port_name.replace("Power", "Energy")
+        elif "power" in port_name.lower():
+            port_name = port_name.replace("power", "Energy").replace("Power", "Energy")
+        else:
+            port_name = f"{port_name} Energy"
+
+        if self._attr_name != port_name:
+            _LOGGER.debug(
+                "Updating energy sensor name from '%s' to '%s'",
+                self._attr_name,
+                port_name,
+            )
+            self._attr_name = port_name
+            self.async_write_ha_state()
 
     @property
     def device_info(self) -> dict[str, Any] | None:
@@ -360,6 +385,30 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
             _async_handle_reset_event,
         )
 
+        # Listen for PoE entity name changes
+        @callback
+        def _async_handle_poe_registry_update(event: Event) -> None:
+            """Handle PoE entity registry updates to sync names."""
+            if event.data.get("action") != "update":
+                return
+            
+            updated_entity_id = event.data.get("entity_id")
+            if updated_entity_id != self._poe_entity_id:
+                return
+            
+            changes = event.data.get("changes", {})
+            # Check if name or original_name changed
+            if "name" in changes or "original_name" in changes:
+                entity_registry = er.async_get(self.hass)
+                poe_entry = entity_registry.async_get(self._poe_entity_id)
+                if poe_entry:
+                    self._update_name_from_poe_entity(poe_entry)
+
+        self._unsub_registry = self.hass.bus.async_listen(
+            er.EVENT_ENTITY_REGISTRY_UPDATED,
+            _async_handle_poe_registry_update,
+        )
+
         # Initialize with current power state
         await self._async_initialize_from_current_state()
 
@@ -391,6 +440,9 @@ class UniFiEnergyAccumulationSensor(RestoreSensor):
         if self._unsub_reset:
             self._unsub_reset()
             self._unsub_reset = None
+        if self._unsub_registry:
+            self._unsub_registry()
+            self._unsub_registry = None
 
     @callback
     def _reset_energy(self) -> None:

@@ -7,7 +7,7 @@ from typing import Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -105,6 +105,31 @@ class UniFiEnergyResetButton(ButtonEntity):
         else:
             # Fallback
             self._attr_unique_id = f"{energy_sensor._poe_entity_id}_energy_reset"  # noqa: SLF001
+        
+        # Track registry updates
+        self._unsub_registry = None
+
+    def _update_name_from_energy_sensor(self) -> None:
+        """Update button name based on energy sensor name."""
+        if not hasattr(self._energy_sensor, "_attr_name"):
+            return
+        
+        energy_name = self._energy_sensor._attr_name  # noqa: SLF001
+        
+        # Create button name from energy sensor name
+        if energy_name.endswith(" Energy"):
+            new_name = energy_name.replace(" Energy", " Reset Energy")
+        else:
+            new_name = f"{energy_name} Reset"
+        
+        if self._attr_name != new_name:
+            _LOGGER.debug(
+                "Updating reset button name from '%s' to '%s'",
+                self._attr_name,
+                new_name,
+            )
+            self._attr_name = new_name
+            self.async_write_ha_state()
 
     @property
     def device_info(self) -> dict[str, Any] | None:
@@ -121,6 +146,9 @@ class UniFiEnergyResetButton(ButtonEntity):
     async def async_internal_will_remove_from_hass(self) -> None:
         """Call when the entity is about to be removed from hass (including when disabled)."""
         await super().async_internal_will_remove_from_hass()
+        if self._unsub_registry:
+            self._unsub_registry()
+            self._unsub_registry = None
         _LOGGER.debug("Button %s disabled", self.entity_id)
 
     async def async_added_to_hass(self) -> None:
@@ -142,6 +170,30 @@ class UniFiEnergyResetButton(ButtonEntity):
 
         # Call the callback directly to update the device
         _async_update_device()
+        
+        # Listen for energy sensor name changes
+        @callback
+        def _async_handle_sensor_registry_update(event: Event) -> None:
+            """Handle energy sensor registry updates to sync button names."""
+            if event.data.get("action") != "update":
+                return
+            
+            if not hasattr(self._energy_sensor, "entity_id"):
+                return
+            
+            updated_entity_id = event.data.get("entity_id")
+            if updated_entity_id != self._energy_sensor.entity_id:
+                return
+            
+            changes = event.data.get("changes", {})
+            # Check if name changed
+            if "name" in changes:
+                self._update_name_from_energy_sensor()
+        
+        self._unsub_registry = self.hass.bus.async_listen(
+            er.EVENT_ENTITY_REGISTRY_UPDATED,
+            _async_handle_sensor_registry_update,
+        )
 
     async def async_press(self) -> None:
         """Handle the button press to reset energy accumulation."""
