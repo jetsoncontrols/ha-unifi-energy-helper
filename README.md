@@ -4,13 +4,13 @@ A Home Assistant custom component that automatically creates synthetic Energy (k
 
 ## Features
 
-- 🔌 **Automatic Discovery**: Automatically finds all UniFi PoE power sensors and PDU outlet sensors
-- ⚡ **Per-Port/Outlet Energy Tracking**: Creates individual energy (kWh) sensors for each PoE port or PDU outlet
-- 📊 **Device Integration**: Energy sensors and reset buttons appear under the same device as the UniFi Network switch or PDU
-- 🔄 **Real-time Tracking**: Updates energy consumption instantly when power changes (event-driven)
-- 🔘 **Reset Buttons**: Each energy sensor has an associated reset button to zero the accumulation
-- 📈 **State Preservation**: Tracks total energy consumption as a monotonically increasing value, persists across restarts
-- 🆕 **Dynamic Discovery**: Automatically detects newly added or enabled PoE ports and PDU outlets
+- **Automatic Discovery**: Automatically finds all UniFi PoE power sensors and UniFi PDU outlet sensors
+- **Per-Port/Outlet Energy Tracking**: Creates individual energy (kWh) sensors for each PoE port and PDU outlet
+- **Device Integration**: Energy sensors and reset buttons appear under the same device as the UniFi Network switch or PDU
+- **Real-time Tracking**: Updates energy consumption instantly when power changes (event-driven)
+- **Reset Buttons**: Each energy sensor has an associated reset button to zero the accumulation
+- **State Preservation**: Tracks total energy consumption as a monotonically increasing value, persists across restarts
+- **Dynamic Discovery**: Automatically detects newly added or enabled PoE ports and PDU outlets
 
 ## Requirements
 
@@ -28,7 +28,7 @@ A Home Assistant custom component that automatically creates synthetic Energy (k
 2. Click on "Integrations"
 3. Click the three dots in the top right corner
 4. Select "Custom repositories"
-5. Add `https://github.com/jetsoncontrols/ha-unifi-helper` as a custom repository with category "Integration"
+5. Add `https://github.com/jetsoncontrols/ha-unifi-energy-helper` as a custom repository with category "Integration"
 6. Click "Install"
 7. Restart Home Assistant
 
@@ -168,5 +168,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 If you encounter issues or have questions:
-- Check the [Issues](https://github.com/jetsoncontrols/ha-unifi-helper/issues) page
+- Check the [Issues](https://github.com/jetsoncontrols/ha-unifi-energy-helper/issues) page
 - Create a new issue with detailed information about your setup and the problem

@@ -30,7 +30,7 @@ HACS (Home Assistant Community Store) is the easiest way to install and manage c
 4. Click the **⋮** (three dots) in the top right corner
 5. Select **Custom repositories**
 6. Add the repository:
-   - **URL**: `https://github.com/jetsoncontrols/ha-unifi-helper`
+   - **URL**: `https://github.com/jetsoncontrols/ha-unifi-energy-helper`
    - **Category**: Integration
 7. Click **Add**
 8. Close the custom repositories dialog
@@ -45,7 +45,7 @@ HACS (Home Assistant Community Store) is the easiest way to install and manage c
 
 If you prefer not to use HACS, you can install manually:
 
-1. Download the latest release from the [releases page](https://github.com/jetsoncontrols/ha-unifi-helper/releases)
+1. Download the latest release from the [releases page](https://github.com/jetsoncontrols/ha-unifi-energy-helper/releases)
 2. Unzip the downloaded file
 3. Copy the `custom_components/unifi_energy_helper` folder to your Home Assistant configuration directory:
    ```
@@ -73,7 +73,7 @@ If you want to contribute or test the latest development version:
 
 ```bash
 cd /config/custom_components
-git clone https://github.com/jetsoncontrols/ha-unifi-helper.git unifi_energy_helper
+git clone https://github.com/jetsoncontrols/ha-unifi-energy-helper.git unifi_energy_helper
 ```
 
 Restart Home Assistant after cloning.
@@ -222,8 +222,8 @@ To remove UniFi Energy Helper:
 ## Getting Help
 
 - **Documentation**: [README.md](README.md)
-- **Issues**: [GitHub Issues](https://github.com/jetsoncontrols/ha-unifi-helper/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/jetsoncontrols/ha-unifi-helper/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jetsoncontrols/ha-unifi-energy-helper/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jetsoncontrols/ha-unifi-energy-helper/discussions)
 
 When reporting issues, please include:
 - Home Assistant version

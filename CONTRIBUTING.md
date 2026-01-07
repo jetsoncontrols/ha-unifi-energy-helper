@@ -11,8 +11,8 @@ Be respectful, constructive, and professional in all interactions.
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/ha-unifi-helper.git
-   cd ha-unifi-helper
+   git clone https://github.com/YOUR_USERNAME/ha-unifi-energy-helper.git
+   cd ha-unifi-energy-helper
    ```
 3. **Create a branch** for your changes:
    ```bash
@@ -230,8 +230,8 @@ When contributing, follow Home Assistant's:
 ## Questions?
 
 - **Documentation**: Read [README.md](README.md), [INSTALL.md](INSTALL.md), [TECHNICAL.md](TECHNICAL.md)
-- **Issues**: Search [existing issues](https://github.com/jetsoncontrols/ha-unifi-helper/issues)
-- **Discussion**: Start a [GitHub Discussion](https://github.com/jetsoncontrols/ha-unifi-helper/discussions)
+- **Issues**: Search [existing issues](https://github.com/jetsoncontrols/ha-unifi-energy-helper/issues)
+- **Discussion**: Start a [GitHub Discussion](https://github.com/jetsoncontrols/ha-unifi-energy-helper/discussions)
 
 ## License
 
@@ -244,4 +244,4 @@ Contributors will be:
 - Credited in CHANGELOG.md
 - Appreciated by the community!
 
-Thank you for contributing to UniFi Energy Helper! 🎉
+Thank you for contributing to UniFi Energy Helper!

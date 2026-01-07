@@ -4,7 +4,7 @@
   "codeowners": ["@jetsoncontrols"],
   "config_flow": true,
   "dependencies": ["unifi"],
-  "documentation": "https://github.com/jetsoncontrols/ha-unifi-helper",
+  "documentation": "https://github.com/jetsoncontrols/ha-unifi-energy-helper",
   "integration_type": "helper",
   "iot_class": "local_polling",
   "requirements": [],

@@ -42,6 +42,8 @@ for entity_id, entry in entity_registry.entities.items():
 - Entity must have a `device_id` (linked to a device)
 - Entity must not be disabled (`disabled_by is None`)
 
+This criteria captures both PoE port sensors and UniFi PDU outlet sensors.
+
 ### 2. Per-Port/Outlet Sensor Creation
 
 For each discovered PoE port or PDU outlet power sensor, an individual energy sensor is created:
@@ -351,6 +353,7 @@ This allows automatic detection of:
   "codeowners": ["@jetsoncontrols"],
   "config_flow": true,
   "dependencies": ["unifi"],
+  "documentation": "https://github.com/jetsoncontrols/ha-unifi-energy-helper",
   "integration_type": "helper",
   "iot_class": "local_polling",
   "requirements": [],
@@ -362,8 +365,8 @@ This allows automatic detection of:
 - `config_flow`: `true` - Uses UI-based configuration
 - `dependencies`: Ensures UniFi integration loads first
 - `integration_type`: "helper" - Provides helper functionality
-- `iot_class`: "local_polling" - Monitors local entity state changes
-- `version`: "2.0.0" - Current version with per-port tracking
+- `iot_class`: "local_polling" - Monitors local entity state changes (despite name, uses event-driven listeners)
+- `version`: "2.0.0" - Current version with per-port/outlet tracking
 
 ### Constants (const.py)
 

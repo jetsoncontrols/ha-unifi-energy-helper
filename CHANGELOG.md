@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reset buttons** for each energy sensor (`button.switch_port_X_reset_energy`)
   - Allows zeroing energy accumulation for individual ports
   - Appears as diagnostic entity under the same device
+- **UniFi PDU support** - Full support for UniFi Power Distribution Unit (PDU) outlets
+  - Automatic detection and energy tracking for PDU outlet power sensors
+  - Smart naming logic to handle PDU outlet naming patterns (e.g., "Outlet 5 Outlet Power" → "Outlet 5 Energy")
+  - Creates individual energy sensors and reset buttons for each PDU outlet
 - **Dynamic entity creation** - Automatically detects and creates sensors for:
   - Newly discovered PoE ports
   - Previously disabled PoE entities that are enabled
@@ -92,14 +96,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Support for UniFi PDU (Power Distribution Unit) outlet power sensors
-- Automatic detection and energy tracking for PDU outlets alongside PoE ports
-- Smart naming logic to handle PDU outlet naming patterns (e.g., "Outlet 5 Outlet Power" → "Outlet 5 Energy")
-
 ### Planned
-- ✅ ~~Per-port energy sensors~~ (Implemented in v2.0.0)
-- ✅ ~~Reset functionality~~ (Implemented in v2.0.0 via reset buttons)
+- ~~Per-port energy sensors~~ (Implemented in v2.0.0)
+- ~~Reset functionality~~ (Implemented in v2.0.0 via reset buttons)
+- ~~UniFi PDU support~~ (Implemented in v2.0.0)
 - Device-level aggregated sensors (optional, in addition to per-port)
 - Power statistics (min/max/average) as attributes
 - Threshold-based notifications
@@ -108,4 +108,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scheduled auto-reset (daily/weekly/monthly)
 - Power factor support for apparent vs real power
 
-[1.0.0]: https://github.com/jetsoncontrols/ha-unifi-helper/releases/tag/v1.0.0
+[1.0.0]: https://github.com/jetsoncontrols/ha-unifi-energy-helper/releases/tag/v1.0.0
